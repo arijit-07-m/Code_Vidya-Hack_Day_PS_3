@@ -39,7 +39,7 @@ export class GeminiProvider implements AIProvider {
       throw new Error(`Gemini API error: ${err}`);
     }
 
-    const data: GeminiResponse = await response.json();
+    const data = await response.json() as GeminiResponse;
     return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   }
 
@@ -78,7 +78,7 @@ export class GeminiProvider implements AIProvider {
       throw new Error(`Gemini embedding error: ${err}`);
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
     return data.embedding?.values || [];
   }
 }

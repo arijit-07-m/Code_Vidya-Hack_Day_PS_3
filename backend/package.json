@@ -14,7 +14,10 @@
     "firebase-admin": "^11.11.0",
     "multer": "^1.4.5-lts.1",
     "uuid": "^9.0.0",
-    "zod": "^3.22.0"
+    "zod": "^3.22.0",
+    "@clubops/config": "file:../packages/config",
+    "@clubops/types": "file:../packages/types",
+    "@clubops/validation": "file:../packages/validation"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

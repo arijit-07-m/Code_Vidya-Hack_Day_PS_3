@@ -25,22 +25,15 @@ function TasksContent() {
       try {
         const d: any = await api.get('/clubs/my');
         setClubs(d.clubs || []);
-        if (d.clubs?.length > 0) {
-          const id = d.clubs[0].id;
-          setCurrentClubId(id);
-          loadTasks(id);
-        }
+        if (d.clubs?.length > 0) { const id = d.clubs[0].id; setCurrentClubId(id); loadTasks(id); }
       } catch (e) { console.error(e); }
     })();
   }, []);
 
   const loadTasks = async (clubId: string) => {
     setLoading(true);
-    try {
-      const d: any = await api.get(`/tasks/clubs/${clubId}`);
-      setTasks(d.tasks || []);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    try { const d: any = await api.get(`/tasks/clubs/${clubId}`); setTasks(d.tasks || []); }
+    catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
   const createTask = async () => {
@@ -53,18 +46,30 @@ function TasksContent() {
   };
 
   const updateStatus = async (taskId: string, status: string) => {
-    try {
-      await api.put(`/tasks/${taskId}`, { status, clubId: currentClubId });
-      if (currentClubId) loadTasks(currentClubId);
-    } catch (e) { console.error(e); }
+    try { await api.put(`/tasks/${taskId}`, { status, clubId: currentClubId }); if (currentClubId) loadTasks(currentClubId); }
+    catch (e) { console.error(e); }
+  };
+
+  const hLogout = async () => { await logout(); };
+  const hClubChange = (id: string) => { setCurrentClubId(id); loadTasks(id); };
+
+  const getFiltered = () => tasks.filter((t: TaskData) => {
+    if (filter === 'todo') return t.status === 'TODO';
+    if (filter === 'in_progress') return t.status === 'IN_PROGRESS';
+    if (filter === 'completed') return t.status === 'COMPLETED';
+    if (filter === 'critical') return t.priority === 'CRITICAL';
+    if (filter === 'overdue') return !!t.deadline && new Date(t.deadline) < new Date() && t.status !== 'COMPLETED';
+    return true;
+  });
+
+  const filtered = getFiltered();
 return (
-    <DashboardLayout sidebar={<Sidebar clubs={clubs} currentClubId={currentClubId || ''} onClubChange={hClubChange} onLogout={hLogout} clubName={clubs.find(c => c.id === currentClubId)?.name || 'Select Club'} />}>
+    <DashboardLayout sidebar={<Sidebar clubs={clubs} currentClubId={currentClubId || ''} onClubChange={hClubChange} onLogout={hLogout} clubName={clubs.find(c => c.id === currentClubId)?.name || 'Select'} />}>
       <div className="p-6 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">✅ Tasks</h1>
           <button className="btn btn-primary" onClick={() => setShowCreate(!showCreate)}>{showCreate ? 'Cancel' : '+ New Task'}</button>
         </div>
-
         {showCreate && (
           <div className="card mb-6">
             <h3 className="font-semibold mb-4">New Task</h3>
@@ -79,7 +84,6 @@ return (
             </div>
           </div>
         )}
-
         <div className="flex gap-2 mb-4 flex-wrap">
           {['all','todo','in_progress','completed','critical','overdue'].map(f => (
             <button key={f} className={`btn btn-sm ${filter === f ? 'btn-primary' : ''}`} onClick={() => setFilter(f)}>
@@ -87,7 +91,6 @@ return (
             </button>
           ))}
         </div>
-
         {loading ? (
           <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="card"><div className="skeleton h-6 w-48" /></div>)}</div>
         ) : filtered.length === 0 ? (
@@ -108,12 +111,8 @@ return (
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  {task.status !== 'COMPLETED' ? (
-                    <button className="btn btn-sm btn-primary" onClick={() => updateStatus(task.id, 'COMPLETED')}>Done</button>
-                  ) : null}
-                  {task.status === 'TODO' && (
-                    <button className="btn btn-sm" onClick={() => updateStatus(task.id, 'IN_PROGRESS')}>Start</button>
-                  )}
+                  {task.status !== 'COMPLETED' ? <button className="btn btn-sm btn-primary" onClick={() => updateStatus(task.id, 'COMPLETED')}>Done</button> : null}
+                  {task.status === 'TODO' ? <button className="btn btn-sm" onClick={() => updateStatus(task.id, 'IN_PROGRESS')}>Start</button> : null}
                 </div>
               </div>
             ))}
@@ -127,16 +126,3 @@ return (
 export default function TasksPage() {
   return <AuthProvider><TasksContent /></AuthProvider>;
 }
-  };
-
-  const hLogout = async () => { await logout(); };
-  const hClubChange = (id: string) => { setCurrentClubId(id); loadTasks(id); };
-
-  const filtered = tasks.filter(t => {
-    if (filter === 'todo') return t.status === 'TODO';
-    if (filter === 'in_progress') return t.status === 'IN_PROGRESS';
-    if (filter === 'completed') return t.status === 'COMPLETED';
-    if (filter === 'critical') return t.priority === 'CRITICAL';
-    if (filter === 'overdue') return t.deadline && new Date(t.deadline) < new Date() && t.status !== 'COMPLETED';
-    return true;
-  });
