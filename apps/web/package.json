@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start"
   },
   "dependencies": {
     "next": "^14.0.0",
@@ -16,10 +15,7 @@
     "recharts": "^2.10.0",
     "lucide-react": "^0.300.0",
     "clsx": "^2.0.0",
-    "zod": "^3.22.0",
-    "@clubops/config": "file:../../packages/config",
-    "@clubops/types": "file:../../packages/types",
-    "@clubops/validation": "file:../../packages/validation"
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

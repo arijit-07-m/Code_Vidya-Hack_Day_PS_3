@@ -11,9 +11,14 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@clubops/types": ["./src/@clubops/types/index"],
+      "@clubops/config": ["./src/@clubops/config/index"],
+      "@clubops/validation": ["./src/@clubops/validation/index"]
+    }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "exclude": ["node_modules", "dist"]
 }

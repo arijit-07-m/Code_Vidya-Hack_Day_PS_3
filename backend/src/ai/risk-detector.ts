@@ -1,6 +1,6 @@
 import { firestore } from '../services/firebase';
-import { COLLECTIONS } from '@clubops/config';
-import { AIRiskFinding } from '@clubops/types';
+import { COLLECTIONS } from '../@clubops/config';
+import { AIRiskFinding } from '../@clubops/types';
 import { AIProvider } from './provider';
 import { detectAlgorithmicRisks, buildRiskContext, saveRisksToFirestore } from './risk-utils';
 

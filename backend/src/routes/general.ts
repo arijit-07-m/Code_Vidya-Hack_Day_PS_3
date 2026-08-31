@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { firestore } from '../services/firebase';
-import { COLLECTIONS } from '@clubops/config';
+import { COLLECTIONS } from '../@clubops/config';
 
 const router = Router();
 

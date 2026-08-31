@@ -11,8 +11,8 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
-import { COLLECTIONS } from '@clubops/config';
-import type { UserProfile } from '@clubops/types';
+import { COLLECTIONS } from '../@clubops/config';
+import type { UserProfile } from '../@clubops/types';
 
 interface AuthContextType {
   user: User | null;

@@ -1,4 +1,4 @@
-import { AIMeetingAnalysis, AIMeetingActionItem } from '@clubops/types';
+import { AIMeetingAnalysis, AIMeetingActionItem } from '../@clubops/types';
 import { AIProvider } from './provider';
 
 const MEETING_ANALYSIS_SYSTEM_PROMPT = `You are an AI assistant that extracts structured action items from meeting notes and transcripts.

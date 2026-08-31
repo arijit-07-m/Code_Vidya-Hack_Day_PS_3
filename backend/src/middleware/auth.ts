@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { auth } from '../services/firebase';
 import { firestore } from '../services/firebase';
-import { COLLECTIONS } from '@clubops/config';
+import { COLLECTIONS } from '../@clubops/config';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -24,6 +24,11 @@ export const authenticate = async (
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       res.status(401).json({ error: 'No authorization token provided' });
+      return;
+    }
+
+    if (!auth) {
+      res.status(503).json({ error: 'Authentication service unavailable. Configure Firebase Admin SDK.' });
       return;
     }
 
@@ -56,7 +61,12 @@ export const requireClubMembership = (requiredRoles?: string[]) => {
         return;
       }
 
-      const memberSnapshot = await firestore
+      if (!firestore) {
+      res.status(503).json({ error: 'Database service unavailable' });
+      return;
+    }
+
+    const memberSnapshot = await firestore
         .collection(COLLECTIONS.CLUB_MEMBERS)
         .where('userId', '==', req.user.uid)
         .where('clubId', '==', clubId)

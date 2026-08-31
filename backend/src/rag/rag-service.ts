@@ -1,7 +1,7 @@
 import { AIProvider } from '../ai/provider';
 import { firestore } from '../services/firebase';
-import { COLLECTIONS } from '@clubops/config';
-import { DocumentChunk } from '@clubops/types';
+import { COLLECTIONS } from '../@clubops/config';
+import { DocumentChunk } from '../@clubops/types';
 import { v4 as uuidv4 } from 'uuid';
 
 const CHUNK_SIZE = 500;

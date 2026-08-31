@@ -1,7 +1,7 @@
 import { firestore } from '../services/firebase';
-import { COLLECTIONS } from '@clubops/config';
+import { COLLECTIONS } from '../@clubops/config';
 import { v4 as uuidv4 } from 'uuid';
-import { AIRiskFinding } from '@clubops/types';
+import { AIRiskFinding } from '../@clubops/types';
 
 export function detectAlgorithmicRisks(tasks: any[], events: any[], volunteers: any[]): AIRiskFinding[] {
   const risks: AIRiskFinding[] = [];

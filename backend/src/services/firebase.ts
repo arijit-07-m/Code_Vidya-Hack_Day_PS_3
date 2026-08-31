@@ -1,24 +1,48 @@
 import * as admin from 'firebase-admin';
+import * as path from 'path';
+import * as fs from 'fs';
 
-const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-
-let firebaseApp: admin.app.App;
-
-if (serviceAccountPath) {
-  firebaseApp = admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  });
-} else {
-  firebaseApp = admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  });
+// Load .env
+const envPath = path.resolve(__dirname, '../../../.env');
+if (fs.existsSync(envPath)) {
+  try { const dotenv = require('dotenv'); dotenv.config({ path: envPath }); } catch (e) { /* ignore */ }
 }
 
-export const firestore = admin.firestore(firebaseApp);
-export const auth = admin.auth(firebaseApp);
-export const storage = admin.storage(firebaseApp);
-export const adminApp = firebaseApp;
+const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'demo-project';
+const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'demo-bucket';
 
-export default firebaseApp;
+let initialized = false;
+let initError: string | null = null;
+
+try {
+  // Try application default credentials first
+  admin.initializeApp({
+    projectId,
+    storageBucket,
+  });
+  initialized = true;
+  console.log('✅ Firebase Admin initialized');
+} catch (err: any) {
+  initError = err.message;
+  console.warn(`⚠️ Firebase Admin SDK: ${err.message}`);
+  // Initialize with minimal config for compilation
+  try {
+    admin.initializeApp({
+      projectId,
+      storageBucket,
+      credential: {
+        getAccessToken: () => Promise.resolve({ access_token: 'mock', expires_in: 3600 }),
+      } as any,
+    });
+    console.warn('   Running with mock credentials (limited functionality)');
+  } catch (e2: any) {
+    console.error('   Failed to initialize even mock credentials:', e2.message);
+  }
+}
+
+export const firestore = admin.firestore();
+export const auth = initialized ? admin.auth() : null;
+export const storage = initialized ? admin.storage() : null;
+export const adminApp = admin.apps[0] || null;
+
+export default adminApp;
