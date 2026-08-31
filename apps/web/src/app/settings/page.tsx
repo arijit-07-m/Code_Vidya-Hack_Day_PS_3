@@ -92,6 +92,32 @@ export default function SettingsPage() {
   };
   const hl = async () => { await signOut(auth); window.location.href = '/login'; };
   const hc = async (id: string) => { scid(id); sclub(clubs.find((x: any) => x.id === id)); };
+  // Ownership transfer
+  const [newOwnerId, setNO] = useState('');
+  const [confirmText, setCT] = useState('');
+  const [omsg, sOmsg] = useState('');
+  const [transferring, sTr] = useState(false);
+  const transferOwnership = async () => {
+    if (!newOwnerId) { sOmsg('Select a new owner'); return; }
+    if (confirmText !== 'TRANSFER') { sOmsg('Type TRANSFER to confirm'); return; }
+    const target = members.find((x: any) => x.id === newOwnerId);
+    const current = members.find((x: any) => x.userId === user.uid);
+    if (!target || !current) { sOmsg('Member not found'); return; }
+    sTr(true); sOmsg('');
+    try {
+      await updateDoc(doc(db, 'clubs', cid), { ownerId: target.userId, updatedAt: new Date().toISOString() });
+      await updateDoc(doc(db, 'clubMembers', target.id), { role: 'OWNER' });
+      await updateDoc(doc(db, 'clubMembers', current.id), { role: 'ADMIN' });
+      await addDoc(collection(db, 'activityLogs'), {
+        clubId: cid, userId: user.uid, userName: user.email, action: 'OWNERSHIP_TRANSFERRED',
+        description: `Ownership of club transferred to ${target.displayName || target.email}`,
+        createdAt: new Date().toISOString(),
+      });
+      sOmsg('✅ Ownership transferred!');
+      setNO(''); setCT(''); if (cid) { LM(cid); }
+    } catch (e: any) { sOmsg('Error: ' + e.message); }
+    sTr(false);
+  };
   if (!user) return <div className="min-h-screen flex items-center justify-center"><div className="skeleton w-8 h-8 rounded-full" /></div>;
 
   return (
@@ -103,6 +129,7 @@ export default function SettingsPage() {
           <div className="tabs mb-6">
             <button className={"tab" + (tab === 'members' ? ' active' : '')} onClick={() => st('members')}>Members</button>
             <button className={"tab" + (tab === 'roles' ? ' active' : '')} onClick={() => st('roles')}>Roles & Permissions</button>
+            {rn === 'Owner' && <button className={"tab" + (tab === 'ownership' ? ' active' : '')} onClick={() => st('ownership')}>Ownership</button>}
           </div>
           {tab === 'members' && (
             <div>
@@ -183,6 +210,28 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+          {tab === 'ownership' && (
+            <div className="card">
+              <h2 className="font-bold text-lg mb-4">👑 Transfer Ownership</h2>
+              <p className="text-sm mb-4">Current Owner: <strong>{(club?.ownerId === user?.uid) ? 'You (logged-in user)' : user?.email?.split('@')[0]}</strong></p>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">New Owner</label>
+                  <select className="select" value={newOwnerId} onChange={e => setNO(e.target.value)}>
+                    <option value="">Select a member...</option>
+                    {members.filter((m: any) => m.role !== 'OWNER').map((m: any) => <option key={m.id} value={m.id}>{m.displayName || m.email}</option>)}
+                  </select>
+                </div>
+                <div className="p-3 bg-red-50 rounded-lg text-sm text-red-700">⚠️ The selected member will become the Owner. You will become Admin. This action is permanent and logged.</div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Type <strong>TRANSFER</strong> to confirm</label>
+                  <input className="input" placeholder="TRANSFER" value={confirmText} onChange={e => setCT(e.target.value)} />
+                </div>
+                <button className="btn btn-danger w-full" onClick={transferOwnership} disabled={transferring || confirmText !== 'TRANSFER'}>{transferring ? 'Transferring...' : 'Transfer Ownership'}</button>
+                {omsg && <p className="text-sm mt-2">{omsg}</p>}
+              </div>
             </div>
           )}
         </div>
