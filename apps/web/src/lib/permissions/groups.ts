@@ -16,20 +16,23 @@ export const PERMISSION_GROUPS: { label: string; permissions: Permission[] }[] =
 ];
 
 export interface NavItemDef {
-  href: string; label: string; icon: string;
-  permission?: Permission; section: 'main' | 'knowledge' | 'ai' | 'analytics' | 'settings';
+  href: string;
+  label: string;
+  icon: string;
+  permission?: Permission;
+  section: 'main' | 'knowledge' | 'operations' | 'ai' | 'analytics' | 'settings';
 }
 
 export const NAV_ITEMS: NavItemDef[] = [
   { href: '/dashboard', label: 'Dashboard', icon: '🏠', section: 'main' },
   { href: '/events', label: 'Events', icon: '📅', permission: 'VIEW_EVENTS', section: 'main' },
-  { href: '/tasks', label: 'Tasks', icon: '✅', permission: 'VIEW_TASKS', section: 'main' },
+  { href: '/tasks', label: 'Tasks', icon: '✓', permission: 'VIEW_TASKS', section: 'main' },
   { href: '/members', label: 'Members', icon: '👥', permission: 'VIEW_MEMBERS', section: 'main' },
   { href: '/volunteers', label: 'Volunteers', icon: '🤝', permission: 'VIEW_VOLUNTEERS', section: 'main' },
   { href: '/meetings', label: 'Meetings', icon: '📝', permission: 'VIEW_MEETINGS', section: 'main' },
   { href: '/documents', label: 'Documents', icon: '📄', permission: 'VIEW_DOCUMENTS', section: 'knowledge' },
-  { href: '/risks', label: 'Risks', icon: '⚠️', permission: 'VIEW_RISKS', section: 'knowledge' },
-  { href: '/announcements', label: 'Announcements', icon: '📢', permission: 'VIEW_ANNOUNCEMENTS', section: 'knowledge' },
+  { href: '/risks', label: 'Risks', icon: '⚠️', permission: 'VIEW_RISKS', section: 'operations' },
+  { href: '/announcements', label: 'Announcements', icon: '📢', permission: 'VIEW_ANNOUNCEMENTS', section: 'operations' },
   { href: '/ai-assistant', label: 'AI Assistant', icon: '✨', permission: 'USE_AI', section: 'ai' },
   { href: '/analytics', label: 'Analytics', icon: '📊', permission: 'VIEW_ANALYTICS', section: 'analytics' },
   { href: '/settings', label: 'Settings', icon: '⚙️', permission: 'MANAGE_CLUB_SETTINGS', section: 'settings' },

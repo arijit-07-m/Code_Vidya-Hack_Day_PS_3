@@ -267,17 +267,15 @@ export default function MeetingsPage() {
         });
       }
 
-      // Also save meeting if not already saved
-      if (form.title.trim()) {
-        await addDoc(collection(db, 'meetings'), {
-          ...form,
-          clubId: currentClubId,
-          participants: [],
-          createdBy: user.uid,
-          createdAt: new Date().toISOString(),
-          aiProcessed: true,
-        });
-      }
+      // Record activity log
+      await addDoc(collection(db, 'activityLogs'), {
+        clubId: currentClubId,
+        userId: user.uid,
+        userName: user.email,
+        action: 'MEETING_ANALYZED',
+        description: `Approved and generated ${selectedItems.length} tasks from "${form.title || 'Meeting Notes'}"`,
+        createdAt: new Date().toISOString(),
+      });
 
       setAnalysis(null);
       setShowCreate(false);
