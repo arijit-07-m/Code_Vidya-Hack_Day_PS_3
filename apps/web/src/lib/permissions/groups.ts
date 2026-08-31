@@ -21,15 +21,16 @@ export interface NavItemDef {
 }
 
 export const NAV_ITEMS: NavItemDef[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: 'LayoutDashboard', section: 'main' },
-  { href: '/events', label: 'Events', icon: 'Calendar', permission: 'VIEW_EVENTS', section: 'main' },
-  { href: '/tasks', label: 'Tasks', icon: 'CheckSquare', permission: 'VIEW_TASKS', section: 'main' },
-  { href: '/volunteers', label: 'Volunteers', icon: 'Users', permission: 'VIEW_VOLUNTEERS', section: 'main' },
-  { href: '/meetings', label: 'Meetings', icon: 'FileText', permission: 'VIEW_MEETINGS', section: 'main' },
-  { href: '/documents', label: 'Documents', icon: 'FolderOpen', permission: 'VIEW_DOCUMENTS', section: 'knowledge' },
-  { href: '/risks', label: 'Risks', icon: 'AlertTriangle', permission: 'VIEW_RISKS', section: 'knowledge' },
-  { href: '/announcements', label: 'Announcements', icon: 'Megaphone', permission: 'VIEW_ANNOUNCEMENTS', section: 'knowledge' },
-  { href: '/ai-assistant', label: 'AI Assistant', icon: 'Sparkles', permission: 'USE_AI', section: 'ai' },
-  { href: '/analytics', label: 'Analytics', icon: 'BarChart3', permission: 'VIEW_ANALYTICS', section: 'analytics' },
-  { href: '/settings', label: 'Settings', icon: 'Settings', permission: 'MANAGE_CLUB_SETTINGS', section: 'settings' },
+  { href: '/dashboard', label: 'Dashboard', icon: '🏠', section: 'main' },
+  { href: '/events', label: 'Events', icon: '📅', permission: 'VIEW_EVENTS', section: 'main' },
+  { href: '/tasks', label: 'Tasks', icon: '✅', permission: 'VIEW_TASKS', section: 'main' },
+  { href: '/members', label: 'Members', icon: '👥', permission: 'VIEW_MEMBERS', section: 'main' },
+  { href: '/volunteers', label: 'Volunteers', icon: '🤝', permission: 'VIEW_VOLUNTEERS', section: 'main' },
+  { href: '/meetings', label: 'Meetings', icon: '📝', permission: 'VIEW_MEETINGS', section: 'main' },
+  { href: '/documents', label: 'Documents', icon: '📄', permission: 'VIEW_DOCUMENTS', section: 'knowledge' },
+  { href: '/risks', label: 'Risks', icon: '⚠️', permission: 'VIEW_RISKS', section: 'knowledge' },
+  { href: '/announcements', label: 'Announcements', icon: '📢', permission: 'VIEW_ANNOUNCEMENTS', section: 'knowledge' },
+  { href: '/ai-assistant', label: 'AI Assistant', icon: '✨', permission: 'USE_AI', section: 'ai' },
+  { href: '/analytics', label: 'Analytics', icon: '📊', permission: 'VIEW_ANALYTICS', section: 'analytics' },
+  { href: '/settings', label: 'Settings', icon: '⚙️', permission: 'MANAGE_CLUB_SETTINGS', section: 'settings' },
 ];
