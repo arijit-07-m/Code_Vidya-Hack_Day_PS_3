@@ -1,0 +1,5 @@
+import os
+f = open(os.path.expanduser('~') + '/Desktop/CodingVidyaPS/apps/web/src/components/BottomNav.tsx', 'w')
+f.write('"use client";import{useState}from"react";import Link from"next/link";import{usePathname}from"next/navigation";var items=[{href:"/dashboard",icon:"🏠",label:"Home"},{href:"/tasks",icon:"✅",label:"Tasks"},{href:"/events",icon:"📅",label:"Events"},{href:"/ai-assistant",icon:"✨",label:"AI"},{href:"/settings",icon:"⚙️",label:"Settings"}];export default function BottomNav(){var p=usePathname();return React.createElement("nav",{className:"lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 flex justify-around items-center h-16 px-2 pb-2"},items.map(function(i){var a=p===i.href||p.startsWith(i.href+"/");return React.createElement(Link,{key:i.href,href:i.href,className:"flex flex-col items-center justify-center gap-0.5 flex-1 py-1 rounded-lg "+(a?"text-indigo-600":"text-gray-400")},React.createElement("span",{className:"text-xl leading-none"},i.icon),React.createElement("span",{className:"text-[10px] font-medium leading-tight"+(a?" font-semibold":"")},i.label))}))}')
+f.close()
+print('Done:', os.path.getsize(f.name))
