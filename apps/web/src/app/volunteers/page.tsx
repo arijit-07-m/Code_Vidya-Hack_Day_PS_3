@@ -83,7 +83,7 @@ export default function VolunteersPage() {
     try {
       const q = query(
         collection(db, 'clubMembers'),
-        where('userId', '==', user.uid), where('status', '==', 'ACTIVE')
+        where('status', '==', 'ACTIVE')
       );
       const snapshot = await getDocs(q);
       const allMembers = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
@@ -118,7 +118,7 @@ export default function VolunteersPage() {
     setLoading(true);
     try {
       const [membersSnap, tasksSnap] = await Promise.all([
-        getDocs(query(collection(db, 'clubMembers'), where('clubId', '==', clubId), where('userId', '==', user.uid), where('status', '==', 'ACTIVE'))),
+        getDocs(query(collection(db, 'clubMembers'), where('clubId', '==', clubId), where('status', '==', 'ACTIVE'))),
         getDocs(query(collection(db, 'tasks'), where('clubId', '==', clubId))),
       ]);
 

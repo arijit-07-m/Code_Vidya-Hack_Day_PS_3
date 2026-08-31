@@ -67,7 +67,7 @@ export default function AnalyticsPage() {
     try {
       const q = query(
         collection(db, 'clubMembers'),
-        where('userId', '==', user.uid), where('status', '==', 'ACTIVE')
+        where('status', '==', 'ACTIVE')
       );
       const snapshot = await getDocs(q);
       const allMembers = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -106,7 +106,7 @@ export default function AnalyticsPage() {
           query(
             collection(db, 'clubMembers'),
             where('clubId', '==', clubId),
-            where('userId', '==', user.uid), where('status', '==', 'ACTIVE')
+            where('status', '==', 'ACTIVE')
           )
         ),
         getDocs(
