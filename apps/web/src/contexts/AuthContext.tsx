@@ -32,35 +32,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        try {
-          const profileDoc = await getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid));
-          if (profileDoc.exists()) {
-            setProfile(profileDoc.data() as UserProfile);
-          } else {
-            // Create profile on first login
-            const newProfile: UserProfile = {
-              uid: firebaseUser.uid,
-              displayName: firebaseUser.displayName || '',
-              email: firebaseUser.email || '',
-              photoURL: firebaseUser.photoURL || undefined,
-              createdAt: new Date().toISOString(),
-            };
-            await setDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid), newProfile);
-            setProfile(newProfile);
-          }
-        } catch (err) {
-          console.error('Error fetching profile:', err);
-        }
-      } else {
-        setProfile(null);
-      }
+    // Safety timeout - force loading to false after 2.5 seconds
+    const timeoutId = setTimeout(() => {
       setLoading(false);
-    });
+    }, 2500);
 
-    return unsubscribe;
+    let unsubscribe: (() => void) | undefined;
+
+    if (auth) {
+      try {
+        unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+          clearTimeout(timeoutId);
+          setUser(firebaseUser);
+          if (firebaseUser) {
+            // Fire and forget profile fetch - don't block on it
+            getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid)).then((profileDoc) => {
+              if (profileDoc.exists()) {
+                setProfile(profileDoc.data() as UserProfile);
+              } else {
+                const newProfile: UserProfile = {
+                  uid: firebaseUser.uid,
+                  displayName: firebaseUser.displayName || '',
+                  email: firebaseUser.email || '',
+                  photoURL: firebaseUser.photoURL || undefined,
+                  createdAt: new Date().toISOString(),
+                };
+                setDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid), newProfile).catch(() => {});
+                setProfile(newProfile);
+              }
+            }).catch(() => {});
+          } else {
+            setProfile(null);
+          }
+          setLoading(false);
+        });
+      } catch (err) {
+        console.error('Auth state error:', err);
+        clearTimeout(timeoutId);
+        setLoading(false);
+      }
+    } else {
+      // No Firebase auth available
+      clearTimeout(timeoutId);
+      setLoading(false);
+    }
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
