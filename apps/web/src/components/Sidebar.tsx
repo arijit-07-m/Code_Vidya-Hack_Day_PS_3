@@ -2,7 +2,6 @@
 import BottomNav from './BottomNav'
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { NAV_ITEMS } from '@/lib/permissions/groups';
 import type { Permission } from '@/lib/permissions/types';
@@ -169,13 +168,13 @@ export default function Sidebar({
                 <span className="truncate">{c.name}</span>
               </button>
             ))}
-            <Link
+            <a
               href="/clubs/new"
               className="block p-2.5 text-xs text-indigo-600 font-semibold border-t border-gray-100 hover:bg-gray-50"
               onClick={() => setShowClubSwitcher(false)}
             >
               + Create New Club
-            </Link>
+            </a>
           </div>
         )}
       </div>
@@ -196,7 +195,7 @@ export default function Sidebar({
                     pathname.startsWith(item.href + '/') ||
                     (item.href === '/ai-assistant' && pathname === '/ai');
                   return (
-                    <Link
+                    <a
                       key={item.href}
                       href={currentClubId ? `${item.href}?clubId=${currentClubId}` : item.href}
                       className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
@@ -208,7 +207,7 @@ export default function Sidebar({
                     >
                       <span className="text-base leading-none">{item.icon}</span>
                       <span>{item.label}</span>
-                    </Link>
+                    </a>
                   );
                 })}
               </div>
