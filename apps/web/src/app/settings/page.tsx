@@ -1,14 +1,33 @@
 'use client';
-import { useState, useEffect } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, signOut, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, doc, getDoc, getDocs, query, where, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { getAuth, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+} from 'firebase/firestore';
 import Sidebar from '@/components/Sidebar';
-const cfg = { apiKey: "AIzaSyAAORXxX6tBpfCAtkEvWD_ls_VDhZuMdro", authDomain: "code-vidya-hack-day-ps-3-6b47d.firebaseapp.com", projectId: "code-vidya-hack-day-ps-3-6b47d" };
+
+const cfg = {
+  apiKey: "AIzaSyAAORXxX6tBpfCAtkEvWD_ls_VDhZuMdro",
+  authDomain: "code-vidya-hack-day-ps-3-6b47d.firebaseapp.com",
+  projectId: "code-vidya-hack-day-ps-3-6b47d",
+};
+
 const app = getApps().length ? getApps()[0] : initializeApp(cfg);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const pG = [
+
+const PERMISSION_GROUPS: [string, string[]][] = [
   ['Club', ['VIEW_CLUB', 'EDIT_CLUB']],
   ['Members', ['VIEW_MEMBERS', 'INVITE_MEMBERS', 'REMOVE_MEMBERS', 'MANAGE_MEMBER_ROLES', 'MANAGE_MEMBER_PERMISSIONS']],
   ['Events', ['VIEW_EVENTS', 'CREATE_EVENTS', 'EDIT_EVENTS', 'DELETE_EVENTS', 'MANAGE_EVENTS']],
@@ -22,141 +41,395 @@ const pG = [
   ['Analytics', ['VIEW_ANALYTICS']],
   ['Administration', ['MANAGE_CLUB_SETTINGS', 'MANAGE_ROLES', 'TRANSFER_OWNERSHIP']],
 ];
-const pretty = (p: string) => p.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase());
+
+const formatPermName = (p: string) =>
+  p
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 
 export default function SettingsPage() {
-  const [user, su] = useState<any>(null);
-  const [checked, sc] = useState(false);
-  const [clubs, scl] = useState<any[]>([]);
-  const [cid, scid] = useState<string | null>(null);
-  const [club, sclub] = useState<any>(null);
-  const [tab, st] = useState('members');
-  const [members, sm] = useState<any[]>([]);
-  const [roles, sr] = useState<any[]>([]);
-  const [rn, srn] = useState('');
-  const [ie, setIE] = useState('');
-  const [ir, setIR] = useState('MEMBER');
-  const [imsg, setMsg] = useState('');
-  const [inv, setInv] = useState(false);
-  const [rf, setRF] = useState({ name: '', description: '', permissions: [] as string[] });
-  const [er, setER] = useState<any>(null);
-  useEffect(() => { const un = onAuthStateChanged(auth, (u: any) => { if (!u) { window.location.href = '/login'; return; } su(u); sc(true); }); return () => un(); }, []);
-  useEffect(() => { if (checked) L(); }, [checked]);
+  const [user, setUser] = useState<User | null>(null);
+  const [checked, setChecked] = useState(false);
+  const [clubs, setClubs] = useState<any[]>([]);
+  const [currentClubId, setCurrentClubId] = useState<string | null>(null);
+  const [club, setClub] = useState<any>(null);
+  const [tab, setTab] = useState<'members' | 'roles' | 'ownership'>('members');
+  const [members, setMembers] = useState<any[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
+  const [roleName, setRoleName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('MEMBER');
+  const [inviteMsg, setInviteMsg] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [roleForm, setRoleForm] = useState({ name: '', description: '', permissions: [] as string[] });
+  const [editingRole, setEditingRole] = useState<any>(null);
 
-  async function L() {
+  // Ownership transfer
+  const [newOwnerId, setNewOwnerId] = useState('');
+  const [confirmText, setConfirmText] = useState('');
+  const [ownerMsg, setOwnerMsg] = useState('');
+  const [transferring, setTransferring] = useState(false);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      if (!u) {
+        window.location.href = '/login';
+        return;
+      }
+      setUser(u);
+      setChecked(true);
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (checked && user) {
+      loadClubs();
+    }
+  }, [checked, user]);
+
+  async function loadClubs() {
+    if (!user) return;
     try {
-      const q = query(collection(db, 'clubMembers'), where('userId', '==', user.uid), where('status', '==', 'ACTIVE'));
-      const sn = await getDocs(q);
-      const mc = (await Promise.all(sn.docs.map(async (d: any) => {
-        const m = d.data(); const c = await getDoc(doc(db, 'clubs', m.clubId));
-        if (!c.exists()) return null; return { id: c.id, ...c.data(), membershipRole: m.role };
-      }))).filter(Boolean);
-      scl(mc);
-      if (mc.length > 0) { scid(mc[0].id); sclub(mc[0]); LM(mc[0].id); LR(mc[0].id); if (mc[0].membershipRole === 'OWNER') srn('Owner'); }
-    } catch (e) { console.error(e); }
+      const q = query(
+        collection(db, 'clubMembers'),
+        where('userId', '==', user.uid),
+        where('status', '==', 'ACTIVE')
+      );
+      const snapshot = await getDocs(q);
+      const rawClubs = await Promise.all(
+        snapshot.docs.map(async (d) => {
+          const m = d.data() as any;
+          const c = await getDoc(doc(db, 'clubs', m.clubId));
+          if (!c.exists()) return null;
+          return { id: c.id, ...c.data(), membershipRole: m.role };
+        })
+      );
+      const memberClubs: any[] = rawClubs.filter((x): x is any => Boolean(x));
+
+      setClubs(memberClubs);
+      if (memberClubs.length > 0 && memberClubs[0]) {
+        const firstClub = memberClubs[0];
+        setCurrentClubId(firstClub.id);
+        setClub(firstClub);
+        loadMembers(firstClub.id);
+        loadRoles(firstClub.id);
+        if (firstClub.membershipRole === 'OWNER') setRoleName('Owner');
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }
-  async function LM(id: string) {
-    try { const ms = await getDocs(query(collection(db, 'clubMembers'), where('clubId', '==', id), where('status', '==', 'ACTIVE'))); sm(ms.docs.map((d: any) => ({ id: d.id, ...d.data() }))); } catch (e) { }
+
+  async function loadMembers(clubId: string) {
+    try {
+      const ms = await getDocs(
+        query(
+          collection(db, 'clubMembers'),
+          where('clubId', '==', clubId),
+          where('status', '==', 'ACTIVE')
+        )
+      );
+      setMembers(ms.docs.map((d) => ({ id: d.id, ...d.data() })));
+    } catch (e) {
+      console.error(e);
+    }
   }
-  async function LR(id: string) {
-    try { const rs = await getDocs(query(collection(db, 'roles'), where('clubId', '==', id))); sr(rs.docs.map((d: any) => ({ id: d.id, ...d.data() }))); } catch (e) { }
+
+  async function loadRoles(clubId: string) {
+    try {
+      const rs = await getDocs(query(collection(db, 'roles'), where('clubId', '==', clubId)));
+      setRoles(rs.docs.map((d) => ({ id: d.id, ...d.data() })));
+    } catch (e) {
+      console.error(e);
+    }
   }
-  const invite = async () => {
-    if (!ie.trim()) { setMsg('Enter email'); return; }
-    setInv(true); setMsg('');
+
+  const handleInvite = async () => {
+    if (!inviteEmail.trim() || !user || !currentClubId) {
+      setInviteMsg('Enter a valid email');
+      return;
+    }
+    setInviting(true);
+    setInviteMsg('');
     try {
       const uid = 'member_' + Date.now();
-      await addDoc(collection(db, 'clubMembers'), { clubId: cid, userId: uid, role: ir, status: 'ACTIVE', joinedAt: new Date().toISOString(), displayName: ie.split('@')[0], email: ie.trim() });
-      await addDoc(collection(db, 'activityLogs'), { clubId: cid, userId: user.uid, userName: user.email, action: 'MEMBER_ADDED', description: `+${ie} added as ${ir}`, createdAt: new Date().toISOString() });
-      setMsg('Added!'); setIE(''); if (cid) LM(cid);
-    } catch (e: any) { setMsg('Error: ' + e.message); }
-    setInv(false);
+      await addDoc(collection(db, 'clubMembers'), {
+        clubId: currentClubId,
+        userId: uid,
+        role: inviteRole,
+        status: 'ACTIVE',
+        joinedAt: new Date().toISOString(),
+        displayName: inviteEmail.split('@')[0],
+        email: inviteEmail.trim(),
+      });
+      await addDoc(collection(db, 'activityLogs'), {
+        clubId: currentClubId,
+        userId: user.uid,
+        userName: user.email,
+        action: 'MEMBER_ADDED',
+        description: `+${inviteEmail} added as ${inviteRole}`,
+        createdAt: new Date().toISOString(),
+      });
+      setInviteMsg('Added!');
+      setInviteEmail('');
+      loadMembers(currentClubId);
+    } catch (e: any) {
+      setInviteMsg('Error: ' + e.message);
+    } finally {
+      setInviting(false);
+    }
   };
-  const upRole = async (mid: string, r: string) => { await updateDoc(doc(db, 'clubMembers', mid), { role: r }); if (cid) LM(cid); };
-  const remMember = async (mid: string) => { if (!confirm('Remove this member?')) return; await updateDoc(doc(db, 'clubMembers', mid), { status: 'REMOVED' }); if (cid) LM(cid); };
-  const createRole = async () => {
-    if (!rf.name.trim()) return;
-    await addDoc(collection(db, 'roles'), { clubId: cid, name: rf.name, description: rf.description, permissions: rf.permissions, isSystemRole: false, createdAt: new Date().toISOString(), createdBy: user.uid });
-    setRF({ name: '', description: '', permissions: [] }); setER(null); if (cid) LR(cid);
-  };
-  const saveRole = async () => {
-    if (!er || !rf.name.trim()) return;
-    await updateDoc(doc(db, 'roles', er.id), { name: rf.name, description: rf.description, permissions: rf.permissions });
-    setRF({ name: '', description: '', permissions: [] }); setER(null); if (cid) LR(cid);
-  };
-  const delRole = async (id: string) => { if (!confirm('Delete this role?')) return; await deleteDoc(doc(db, 'roles', id)); if (cid) LR(cid); };
-  const tp = (p: string) => {
-    const arr = rf.permissions;
-    if (arr.indexOf(p) > -1) setRF({ ...rf, permissions: arr.filter((x: string) => x !== p) });
-    else setRF({ ...rf, permissions: [...arr, p] });
-  };
-  const hl = async () => { await signOut(auth); window.location.href = '/login'; };
-  const hc = async (id: string) => { scid(id); sclub(clubs.find((x: any) => x.id === id)); };
-  // Ownership transfer
-  const [newOwnerId, setNO] = useState('');
-  const [confirmText, setCT] = useState('');
-  const [omsg, sOmsg] = useState('');
-  const [transferring, sTr] = useState(false);
-  const transferOwnership = async () => {
-    if (!newOwnerId) { sOmsg('Select a new owner'); return; }
-    if (confirmText !== 'TRANSFER') { sOmsg('Type TRANSFER to confirm'); return; }
-    const target = members.find((x: any) => x.id === newOwnerId);
-    const current = members.find((x: any) => x.userId === user.uid);
-    if (!target || !current) { sOmsg('Member not found'); return; }
-    sTr(true); sOmsg('');
+
+  const removeMember = async (mid: string) => {
+    if (!confirm('Remove this member?')) return;
     try {
-      await updateDoc(doc(db, 'clubs', cid), { ownerId: target.userId, updatedAt: new Date().toISOString() });
+      await updateDoc(doc(db, 'clubMembers', mid), { status: 'REMOVED' });
+      if (currentClubId) loadMembers(currentClubId);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const createRole = async () => {
+    if (!roleForm.name.trim() || !currentClubId || !user) return;
+    try {
+      await addDoc(collection(db, 'roles'), {
+        clubId: currentClubId,
+        name: roleForm.name,
+        description: roleForm.description,
+        permissions: roleForm.permissions,
+        isSystemRole: false,
+        createdAt: new Date().toISOString(),
+        createdBy: user.uid,
+      });
+      setRoleForm({ name: '', description: '', permissions: [] });
+      setEditingRole(null);
+      loadRoles(currentClubId);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const saveRole = async () => {
+    if (!editingRole || !roleForm.name.trim() || !currentClubId) return;
+    try {
+      await updateDoc(doc(db, 'roles', editingRole.id), {
+        name: roleForm.name,
+        description: roleForm.description,
+        permissions: roleForm.permissions,
+      });
+      setRoleForm({ name: '', description: '', permissions: [] });
+      setEditingRole(null);
+      loadRoles(currentClubId);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const deleteRole = async (id: string) => {
+    if (!confirm('Delete this role?')) return;
+    try {
+      await deleteDoc(doc(db, 'roles', id));
+      if (currentClubId) loadRoles(currentClubId);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const togglePermission = (p: string) => {
+    const arr = roleForm.permissions;
+    if (arr.includes(p)) {
+      setRoleForm({ ...roleForm, permissions: arr.filter((x) => x !== p) });
+    } else {
+      setRoleForm({ ...roleForm, permissions: [...arr, p] });
+    }
+  };
+
+  const transferOwnership = async () => {
+    if (!newOwnerId) {
+      setOwnerMsg('Select a new owner');
+      return;
+    }
+    if (confirmText !== 'TRANSFER') {
+      setOwnerMsg('Type TRANSFER in capital letters to confirm');
+      return;
+    }
+    if (!currentClubId || !user) return;
+
+    const target = members.find((x) => x.id === newOwnerId);
+    const current = members.find((x) => x.userId === user.uid);
+    if (!target || !current) {
+      setOwnerMsg('Target member not found');
+      return;
+    }
+
+    setTransferring(true);
+    setOwnerMsg('');
+    try {
+      await updateDoc(doc(db, 'clubs', currentClubId), {
+        ownerId: target.userId,
+        updatedAt: new Date().toISOString(),
+      });
       await updateDoc(doc(db, 'clubMembers', target.id), { role: 'OWNER' });
       await updateDoc(doc(db, 'clubMembers', current.id), { role: 'ADMIN' });
       await addDoc(collection(db, 'activityLogs'), {
-        clubId: cid, userId: user.uid, userName: user.email, action: 'OWNERSHIP_TRANSFERRED',
+        clubId: currentClubId,
+        userId: user.uid,
+        userName: user.email,
+        action: 'OWNERSHIP_TRANSFERRED',
         description: `Ownership of club transferred to ${target.displayName || target.email}`,
         createdAt: new Date().toISOString(),
       });
-      sOmsg('✅ Ownership transferred!');
-      setNO(''); setCT(''); if (cid) { LM(cid); }
-    } catch (e: any) { sOmsg('Error: ' + e.message); }
-    sTr(false);
+      setOwnerMsg('✅ Ownership transferred successfully!');
+      setNewOwnerId('');
+      setConfirmText('');
+      loadMembers(currentClubId);
+    } catch (e: any) {
+      setOwnerMsg('Error: ' + e.message);
+    } finally {
+      setTransferring(false);
+    }
   };
-  if (!user) return <div className="min-h-screen flex items-center justify-center"><div className="skeleton w-8 h-8 rounded-full" /></div>;
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    window.location.href = '/login';
+  };
+
+  const handleClubChange = (id: string) => {
+    setCurrentClubId(id);
+    const selected = clubs.find((x) => x.id === id);
+    setClub(selected);
+    loadMembers(id);
+    loadRoles(id);
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="skeleton w-8 h-8 rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar clubs={clubs} currentClubId={cid || ''} userDisplayName={user?.email?.split('@')[0]} clubRole={rn} onClubChange={hc} onLogout={hl} clubName={club?.name} />
+      <Sidebar
+        clubs={clubs}
+        currentClubId={currentClubId || ''}
+        userDisplayName={user?.email?.split('@')[0]}
+        clubRole={roleName}
+        onClubChange={handleClubChange}
+        onLogout={handleLogout}
+        clubName={club?.name}
+      />
       <main className="flex-1 bg-gray-50 overflow-y-auto p-6">
         <div className="max-w-5xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">⚙️ Settings</h1>
+          <h1 className="text-2xl font-bold mb-6">⚙️ Settings & Administration</h1>
+
           <div className="tabs mb-6">
-            <button className={"tab" + (tab === 'members' ? ' active' : '')} onClick={() => st('members')}>Members</button>
-            <button className={"tab" + (tab === 'roles' ? ' active' : '')} onClick={() => st('roles')}>Roles & Permissions</button>
-            {rn === 'Owner' && <button className={"tab" + (tab === 'ownership' ? ' active' : '')} onClick={() => st('ownership')}>Ownership</button>}
+            <button
+              className={'tab' + (tab === 'members' ? ' active' : '')}
+              onClick={() => setTab('members')}
+            >
+              Members
+            </button>
+            <button
+              className={'tab' + (tab === 'roles' ? ' active' : '')}
+              onClick={() => setTab('roles')}
+            >
+              Roles & Permissions
+            </button>
+            {roleName === 'Owner' && (
+              <button
+                className={'tab' + (tab === 'ownership' ? ' active' : '')}
+                onClick={() => setTab('ownership')}
+              >
+                Transfer Ownership
+              </button>
+            )}
           </div>
+
           {tab === 'members' && (
             <div>
               <div className="card mb-6">
-                <h3 className="font-semibold mb-4">Invite Member</h3>
-                <div className="flex gap-2 items-end">
-                  <div className="flex-1"><input className="input" placeholder="Email or name" value={ie} onChange={e => setIE(e.target.value)} /></div>
-                  <select className="select w-36" value={ir} onChange={e => setIR(e.target.value)}>
-                    <option value="ADMIN">Admin</option><option value="EVENT_HEAD">Event Head</option><option value="MEMBER">Member</option><option value="VOLUNTEER">Volunteer</option>
-                  </select>
-                  <button className="btn btn-primary" onClick={invite} disabled={inv}>{inv ? 'Adding...' : 'Add Member'}</button>
-                </div>
-                {imsg && <p className="text-sm mt-2">{imsg}</p>}
-              </div>
-              <div className="space-y-2">
-                {members.length === 0 ? <p className="text-sm text-gray-400 text-center py-8">No members yet.</p> : members.map(m => (
-                  <div key={m.id} className="card flex items-center justify-between p-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center font-medium text-indigo-600">{(m.displayName || m.email || '?')[0].toUpperCase()}</div>
-                      <div><p className="font-medium">{m.displayName || m.email || 'User'}</p><p className="text-xs text-gray-500">{m.email || ''}</p></div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={"badge " + (m.role === 'OWNER' ? 'badge-red' : m.role === 'ADMIN' ? 'badge-blue' : m.role === 'EVENT_HEAD' ? 'badge-yellow' : 'badge-gray')}>{m.role || 'Member'}</span>
-                      {m.role !== 'OWNER' && <button className="btn btn-sm btn-danger" onClick={() => remMember(m.id)}>Remove</button>}
-                    </div>
+                <h3 className="font-semibold mb-4 text-base">Invite Member</h3>
+                <div className="flex gap-2 items-end flex-wrap">
+                  <div className="flex-1 min-w-[240px]">
+                    <input
+                      className="input"
+                      placeholder="Email or name"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                    />
                   </div>
-                ))}
+                  <select
+                    className="select w-36"
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value)}
+                  >
+                    <option value="ADMIN">Admin</option>
+                    <option value="EVENT_HEAD">Event Head</option>
+                    <option value="MEMBER">Member</option>
+                    <option value="VOLUNTEER">Volunteer</option>
+                  </select>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleInvite}
+                    disabled={inviting}
+                  >
+                    {inviting ? 'Adding...' : 'Add Member'}
+                  </button>
+                </div>
+                {inviteMsg && <p className="text-xs text-gray-600 mt-2">{inviteMsg}</p>}
+              </div>
+
+              <div className="space-y-2">
+                {members.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-8">No members yet.</p>
+                ) : (
+                  members.map((m) => (
+                    <div key={m.id} className="card flex items-center justify-between p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center font-medium text-indigo-600">
+                          {(m.displayName || m.email || '?')[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm text-gray-900">
+                            {m.displayName || m.email || 'User'}
+                          </p>
+                          <p className="text-xs text-gray-500">{m.email || ''}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={
+                            'badge ' +
+                            (m.role === 'OWNER'
+                              ? 'badge-red'
+                              : m.role === 'ADMIN'
+                              ? 'badge-blue'
+                              : m.role === 'EVENT_HEAD'
+                              ? 'badge-yellow'
+                              : 'badge-gray')
+                          }
+                        >
+                          {m.role || 'Member'}
+                        </span>
+                        {m.role !== 'OWNER' && (
+                          <button
+                            className="btn btn-sm btn-danger"
+                            onClick={() => removeMember(m.id)}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -164,73 +437,194 @@ export default function SettingsPage() {
           {tab === 'roles' && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-gray-500">Create custom roles with granular permissions</p>
-                <button className="btn btn-primary btn-sm" onClick={() => { setER({ new: true }); setRF({ name: '', description: '', permissions: [] }); }}>+ Create Role</button>
+                <p className="text-sm text-gray-500">
+                  Create custom roles with granular permissions
+                </p>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => {
+                    setEditingRole({ new: true });
+                    setRoleForm({ name: '', description: '', permissions: [] });
+                  }}
+                >
+                  + Create Role
+                </button>
               </div>
-              <div className="card mb-4">
-                <div className="p-3 bg-gray-50 rounded-lg mb-2"><p className="font-semibold">👑 Owner</p><p className="text-sm text-gray-500">Full access to everything</p></div>
-                <div className="p-3 bg-gray-50 rounded-lg"><p className="font-semibold">🛡️ Admin</p><p className="text-sm text-gray-500">Club management</p></div>
-              </div>
-              {roles.length === 0 ? <p className="text-sm text-gray-400 text-center py-4">No custom roles yet.</p> : roles.map(r => (
-                <div key={r.id} className="card mb-2 flex items-center justify-between p-3">
-                  <div>
-                    <p className="font-semibold">{r.name}</p>
-                    <p className="text-xs text-gray-500">{r.description || ''}</p>
-                    <p className="text-xs text-gray-400 mt-1">{r.permissions?.length || 0} permissions</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className="btn btn-sm" onClick={() => { setER(r); setRF({ name: r.name, description: r.description || '', permissions: r.permissions || [] }); }}>Edit</button>
-                    <button className="btn btn-sm btn-danger" onClick={() => delRole(r.id)}>Delete</button>
-                  </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                <div className="p-3 bg-white border border-gray-200 rounded-xl">
+                  <p className="font-semibold text-sm">👑 Owner</p>
+                  <p className="text-xs text-gray-500">Full access to all operations & transfers</p>
                 </div>
-              ))}
-              {er !== null && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setER(null)}>
-                  <div className="bg-white rounded-xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                    <h2 className="text-lg font-bold mb-4">{er.new ? 'Create Role' : 'Edit Role'}</h2>
-                    <input className="input mb-2" placeholder="Role name (e.g. Event Manager)" value={rf.name} onChange={e => setRF({ ...rf, name: e.target.value })} />
-                    <input className="input mb-4" placeholder="Description" value={rf.description} onChange={e => setRF({ ...rf, description: e.target.value })} />
-                    <div className="space-y-3 mb-4">
-                      {pG.map((g: any, j: number) => (
-                        <div key={j}>
-                          <p className="text-sm font-semibold text-gray-600 mb-1">{g[0]}</p>
-                          {g[1].map((pm: string, i: number) => (
-                            <label key={i} className="flex items-center gap-2 text-sm cursor-pointer p-0.5 rounded hover:bg-gray-50">
-                              <input type="checkbox" checked={rf.permissions.indexOf(pm) > -1} onChange={() => tp(pm)} />
-                              {pretty(pm)}
-                            </label>
-                          ))}
+                <div className="p-3 bg-white border border-gray-200 rounded-xl">
+                  <p className="font-semibold text-sm">🛡️ Admin</p>
+                  <p className="text-xs text-gray-500">Club management and task assignments</p>
+                </div>
+              </div>
+
+              {roles.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">No custom roles yet.</p>
+              ) : (
+                roles.map((r) => (
+                  <div
+                    key={r.id}
+                    className="card mb-2 flex items-center justify-between p-3"
+                  >
+                    <div>
+                      <p className="font-semibold text-sm">{r.name}</p>
+                      <p className="text-xs text-gray-500">{r.description || ''}</p>
+                      <p className="text-xs text-indigo-600 mt-1">
+                        {r.permissions?.length || 0} permissions granted
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        className="btn btn-sm bg-white border border-gray-200"
+                        onClick={() => {
+                          setEditingRole(r);
+                          setRoleForm({
+                            name: r.name,
+                            description: r.description || '',
+                            permissions: r.permissions || [],
+                          });
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => deleteRole(r.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+
+              {editingRole !== null && (
+                <div
+                  className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                  onClick={() => setEditingRole(null)}
+                >
+                  <div
+                    className="bg-white rounded-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto animate-fadeIn"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <h2 className="text-lg font-bold mb-3">
+                      {editingRole.new ? 'Create Custom Role' : 'Edit Role'}
+                    </h2>
+                    <input
+                      className="input mb-2"
+                      placeholder="Role name (e.g. Lead Coordinator)"
+                      value={roleForm.name}
+                      onChange={(e) =>
+                        setRoleForm({ ...roleForm, name: e.target.value })
+                      }
+                    />
+                    <input
+                      className="input mb-4"
+                      placeholder="Short description"
+                      value={roleForm.description}
+                      onChange={(e) =>
+                        setRoleForm({ ...roleForm, description: e.target.value })
+                      }
+                    />
+
+                    <div className="space-y-4 mb-4">
+                      {PERMISSION_GROUPS.map(([groupName, perms], j) => (
+                        <div key={j} className="border-t pt-2">
+                          <p className="text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                            {groupName}
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                            {perms.map((pm, i) => (
+                              <label
+                                key={i}
+                                className="flex items-center gap-2 text-xs cursor-pointer p-1 rounded hover:bg-gray-50"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={roleForm.permissions.includes(pm)}
+                                  onChange={() => togglePermission(pm)}
+                                  className="rounded text-indigo-600"
+                                />
+                                <span className="text-gray-700">{formatPermName(pm)}</span>
+                              </label>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
+
                     <div className="flex gap-2">
-                      <button className="btn btn-primary flex-1" onClick={er.new ? createRole : saveRole}>{er.new ? 'Create Role' : 'Save'}</button>
-                      <button className="btn flex-1" onClick={() => setER(null)}>Cancel</button>
+                      <button
+                        className="btn btn-primary flex-1"
+                        onClick={editingRole.new ? createRole : saveRole}
+                      >
+                        {editingRole.new ? 'Create Role' : 'Save Changes'}
+                      </button>
+                      <button
+                        className="btn flex-1 bg-gray-100"
+                        onClick={() => setEditingRole(null)}
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </div>
                 </div>
               )}
             </div>
           )}
+
           {tab === 'ownership' && (
             <div className="card">
-              <h2 className="font-bold text-lg mb-4">👑 Transfer Ownership</h2>
-              <p className="text-sm mb-4">Current Owner: <strong>{(club?.ownerId === user?.uid) ? 'You (logged-in user)' : user?.email?.split('@')[0]}</strong></p>
+              <h2 className="font-bold text-lg mb-2">👑 Transfer Club Ownership</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Current Owner: <strong>{user?.email?.split('@')[0]}</strong>
+              </p>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">New Owner</label>
-                  <select className="select" value={newOwnerId} onChange={e => setNO(e.target.value)}>
-                    <option value="">Select a member...</option>
-                    {members.filter((m: any) => m.role !== 'OWNER').map((m: any) => <option key={m.id} value={m.id}>{m.displayName || m.email}</option>)}
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
+                    Select New Owner
+                  </label>
+                  <select
+                    className="select"
+                    value={newOwnerId}
+                    onChange={(e) => setNewOwnerId(e.target.value)}
+                  >
+                    <option value="">Choose a club member...</option>
+                    {members
+                      .filter((m) => m.role !== 'OWNER')
+                      .map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.displayName || m.email}
+                        </option>
+                      ))}
                   </select>
                 </div>
-                <div className="p-3 bg-red-50 rounded-lg text-sm text-red-700">⚠️ The selected member will become the Owner. You will become Admin. This action is permanent and logged.</div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Type <strong>TRANSFER</strong> to confirm</label>
-                  <input className="input" placeholder="TRANSFER" value={confirmText} onChange={e => setCT(e.target.value)} />
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+                  ⚠️ <strong>Important Notice:</strong> The selected member will become the primary Owner. Your role will change to Admin. This action is irreversible.
                 </div>
-                <button className="btn btn-danger w-full" onClick={transferOwnership} disabled={transferring || confirmText !== 'TRANSFER'}>{transferring ? 'Transferring...' : 'Transfer Ownership'}</button>
-                {omsg && <p className="text-sm mt-2">{omsg}</p>}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
+                    Type <strong>TRANSFER</strong> to confirm
+                  </label>
+                  <input
+                    className="input"
+                    placeholder="TRANSFER"
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="btn btn-danger w-full"
+                  onClick={transferOwnership}
+                  disabled={transferring || confirmText !== 'TRANSFER'}
+                >
+                  {transferring ? 'Transferring...' : 'Transfer Ownership'}
+                </button>
+                {ownerMsg && <p className="text-xs font-semibold mt-2">{ownerMsg}</p>}
               </div>
             </div>
           )}

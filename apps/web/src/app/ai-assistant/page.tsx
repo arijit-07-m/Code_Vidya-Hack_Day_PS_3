@@ -1,8 +1,477 @@
-"use client";import React from"react";import{useState,useEffect}from"react";import{initializeApp,getApps}from"firebase/app";import{getAuth,signOut,onAuthStateChanged}from"firebase/auth";import{getFirestore,collection,addDoc,query,where,getDocs,orderBy,doc,getDoc,updateDoc}from"firebase/firestore";import Sidebar from"@/components/Sidebar";var cfg={apiKey:"AIzaSyAAORXxX6tBpfCAtkEvWD_ls_VDhZuMdro",authDomain:"code-vidya-hack-day-ps-3-6b47d.firebaseapp.com",projectId:"code-vidya-hack-day-ps-3-6b47d"};var app=getApps().length?getApps()[0]:initializeApp(cfg);var auth=getAuth(app);var db=getFirestore(app);function fmtDate(d){if(!d)return"";try{return new Date(d).toLocaleDateString()}catch{return d}}function ta(iso){if(!iso)return"";var s=Math.floor((Date.now()-new Date(iso).getTime())/1000);if(s<60)return"just now";if(s<3600)return Math.floor(s/60)+"m";if(s<86400)return Math.floor(s/3600)+"h";return Math.floor(s/86400)+"d"}export default function AIPage(){var[user,su]=React.useState(null);var[ck,sc]=React.useState(false);var[clubs,scl]=React.useState([]);var[cid,scid]=React.useState(null);var[club,sclub]=React.useState(null);var[cmd,scmd]=React.useState("");var[msgs,sms]=React.useState([]);var[cf,scf]=React.useState(null);var[exec,sex]=React.useState(false);var[ts,st]=React.useState([]);var[es,se]=React.useState([]);var[mbs,smb]=React.useState([]);var[rs,sr]=React.useState([]);var[rn,srn]=React.useState("");var[ld,sld]=React.useState(true);React.useEffect(function(){var un=onAuthStateChanged(auth,function(u){if(!u){window.location.href="/login";return}su(u);sc(true)});return function(){un()}},[]);React.useEffect(function(){if(ck)L()},[ck]);async function L(){try{var q=query(collection(db,"clubMembers"),where("userId","==",user.uid),where("status","==","ACTIVE"));var sn=await getDocs(q);var mc=(await Promise.all(sn.docs.map(async function(d){var m=d.data();var c=await getDoc(doc(db,"clubs",m.clubId));if(!c.exists())return null;return{id:c.id,...c.data(),membershipRole:m.role}}))).filter(Boolean);scl(mc);if(mc.length>0){var id=mc[0].id;scid(id);sclub(mc[0]);if(mc[0].membershipRole==="OWNER")srn("Owner");LD(id)}sld(false)}catch(e){sld(false)}}async function LD(id){try{var[tsn,esn,msn,rsn]=await Promise.all([getDocs(query(collection(db,"tasks"),where("clubId","==",id))),getDocs(query(collection(db,"events"),where("clubId","==",id))),getDocs(query(collection(db,"clubMembers"),where("clubId","==",id),where("status","==","ACTIVE"))),getDocs(query(collection(db,"risks"),where("clubId","==",id)))]);st(tsn.docs.map(function(d){return{id:d.id,...d.data()}}));se(esn.docs.map(function(d){return{id:d.id,...d.data()}}));smb(msn.docs.map(function(d){return{id:d.id,...d.data()}}));sr(rsn.docs.map(function(d){return{id:d.id,...d.data()}}))}catch(e){}}var hl=async function(){await signOut(auth);window.location.href="/login"};var hc=function(id){scid(id);sclub(clubs.find(function(x){return x.id===id}));LD(id)};
-function processCmd(cl,tasks,events,members,risks){var c=cl.toLowerCase();var now=new Date();var urg=tasks.filter(function(t){return(t.priority==="HIGH"||t.priority==="CRITICAL")&&t.status!=="COMPLETED"});var od=tasks.filter(function(t){return t.deadline&&new Date(t.deadline)<now&&t.status!=="COMPLETED"});var or=risks.filter(function(r){return r.status==="OPEN"||!r.status});if(c.includes("urgent")||c.includes("what needs my")||c.includes("attention")||c.includes("whats happening")){var r="";if(urg.length>0)r+="RED "+(urg.length)+" urgent:LINE"+urg.slice(0,5).map(function(t){return" BULLET "+t.title+" ("+t.priority+") - "+(t.assignedTo||"?")}).join("LINE")+"LINE";if(od.length>0)r+="YELLOW "+(od.length)+" overdue:LINE"+od.slice(0,3).map(function(t){return" BULLET "+t.title}).join("LINE")+"LINE";if(or.length>0)r+="WARN "+(or.length)+" risksLINE";if(!r)r="CHECK All clear.";return{response:r}}var mC=members.map(function(m){var n=tasks.filter(function(t){return(t.assignedTo===m.userId||(t.assignedTo||"").toLowerCase()===(m.displayName||"").toLowerCase())&&t.status!=="COMPLETED"}).length;return{n:m.displayName||m.email||"?",c:n}}).sort(function(a,b){return b.c-a});if(c.includes("overloaded")||c.includes("workload")||c.includes("who is")){if(mC.length===0)return{response:"No workload data."};return{response:"CHART Workload:LINE"+mC.slice(0,8).map(function(x){return" "+x.n+": "+x.c+" tasks"+(x.c>3?" RED":"")}).join("LINE")}}if(c.includes("risk")||c.includes("show risk")){if(or.length===0)return{response:"CHECK No active risks."};var cr=or.filter(function(rr){return rr.severity==="CRITICAL"});var hi=or.filter(function(rr){return rr.severity==="HIGH"});var me=or.filter(function(rr){return rr.severity==="MEDIUM"});r="WARN "+or.length+" risks:LINE";if(cr.length>0)r+="RED "+cr.length+" CriticalLINE";if(hi.length>0)r+="YELLOW "+hi.length+" HighLINE";if(me.length>0)r+="GREEN "+me.length+" MediumLINE";r+="LINE"+or.slice(0,3).map(function(rr){return" BULLET "+rr.title+(rr.description?": "+rr.description:"")}).join("LINE");return{response:r}}if(c.includes("list task")||c.includes("show task")||c.includes("all tasks")||c.includes("my tasks")){var todo=tasks.filter(function(t){return t.status==="TODO"});if(todo.length===0)return{response:"CHECK No pending tasks."};return{response:"CLIP Pending ("+todo.length+"):LINE"+todo.slice(0,8).map(function(t){return" BULLET "+t.title+" ["+t.priority+"] - "+(t.assignedTo||"?")}).join("LINE")+(todo.length>8?"LINE ...+"+(todo.length-8):"")}}var cm=c.match(/create\s+(?:a\s+)?(?:(\w+)\s+)?task\s+for\s+(.+?)\s+to\s+(.+?)(?:\s+by\s+(today|tomorrow|tonight|\S+))?$/i);if(cm){var nm=cm[2].trim();var tl=cm[3].trim();var pr=cm[1]?cm[1].toUpperCase():"HIGH";if(pr!=="HIGH"&&pr!=="CRITICAL"&&pr!=="MEDIUM")pr="HIGH";var dl=cm[4];var dd=dl==="tomorrow"?new Date(Date.now()+86400000).toISOString().split("T")[0]:dl==="today"||dl==="tonight"?new Date().toISOString().split("T")[0]:dl||new Date().toISOString().split("T")[0];return{response:"I can create this task:TASKLINETask: "+tl+":TLINEName: "+nm+":TLINEPriority: "+pr+":TLINEDeadline: "+dd+":TLINETLINEConfirm?",action:{action:"create",data:{title:tl,assignedTo:nm,deadline:dd,priority:pr}}}}if(c.includes("mark")||c.includes("complete")){var mx=c.match(/mark\s+(.+?)\s+(?:as\s+)?(?:completed|done)/i);if(mx){var mtl=mx[1].trim().toLowerCase();var mt=tasks.filter(function(t){return(t.title||"").toLowerCase().includes(mtl)});if(mt.length===0)return{response:"No task matching "+mtl+"."};var mt2=mt[0];return{response:"Mark as done?TASKLINETask: "+mt2.title+"LINE"+(mt2.assignedTo||"")+" ["+mt2.priority+"]",action:{action:"complete",data:{taskId:mt2.id}}}}}return{response:"Try:\nCreate a task for NAME to do X by tomorrow\nWhat are urgent tasks?\nWho is overloaded?\nList tasks\nMark task as done\nWhat risks?"}}
-function submit(){if(!cmd.trim())return;var nm={from:"user",text:cmd};sms(function(a){return[...a,nm]});var r=processCmd(cmd,ts,es,mbs,rs);if(r.action){sms(function(a){return[...a,{from:"ai",text:r.response}]});scf(r.action)}else{sms(function(a){return[...a,{from:"ai",text:r.response}]})}scmd("")}
+'use client';
 
-async function execA(){if(!cf)return;sex(true);try{if(cf.action==="create"){await addDoc(collection(db,"tasks"),{...cf.data,clubId:cid,status:"TODO",createdBy:user.uid,createdAt:new Date().toISOString()});await addDoc(collection(db,"activityLogs"),{clubId:cid,userId:user.uid,userName:user.email,action:"AI_CREATED_TASK",description:"AI created: "+cf.data.title,createdAt:new Date().toISOString()});sms(function(a){return[...a,{from:"ai",text:"CHECK Created: "+cf.data.title}]});scf(null);if(cid)LD(cid)}else if(cf.action==="complete"){await updateDoc(doc(db,"tasks",cf.data.taskId),{status:"COMPLETED",updatedAt:new Date().toISOString()});sms(function(a){return[...a,{from:"ai",text:"CHECK Task marked complete."}]});scf(null);if(cid)LD(cid)}}catch(e){sms(function(a){return[...a,{from:"ai",text:"Error: "+e.message}]})}sex(false)}
-if(!user)return React.createElement("div",{className:"min-h-screen flex items-center justify-center"},React.createElement("div",{className:"skeleton w-8 h-8 rounded-full"}));
+import React, { useState, useEffect } from 'react';
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  doc,
+  getDoc,
+  updateDoc,
+} from 'firebase/firestore';
+import Sidebar from '@/components/Sidebar';
 
-return React.createElement("div",{className:"flex min-h-screen"},React.createElement(Sidebar,{clubs:clubs,currentClubId:cid||"",userDisplayName:user?.email?.split("@")[0],clubRole:rn,onClubChange:hc,onLogout:hl,clubName:club?.name}),React.createElement("main",{className:"flex-1 bg-gray-50 overflow-y-auto p-6"},React.createElement("div",{className:"max-w-4xl mx-auto"},React.createElement("h1",{className:"text-2xl font-bold mb-2"},"\u2728 AI Assistant"),React.createElement("p",{className:"text-gray-500 mb-6"},"Natural language commands for your club operations"),React.createElement("div",{className:"space-y-4 mb-6 max-h-96 overflow-y-auto p-2"},msgs.length===0?React.createElement("div",{className:"text-center text-gray-400 py-8"},React.createElement("div",{className:"text-4xl mb-2"},"\u{1f916}"),React.createElement("p",{className:"text-sm"},"Try a command like:"),React.createElement("p",{className:"text-xs mt-1"},"\u201cCreate a task for Rahul to arrange the projector\u201d")):msgs.map(function(m,i){return React.createElement("div",{key:i,className:"flex gap-3 "+(m.from==="ai"?"bg-indigo-50 p-3 rounded-lg":"p-3")},React.createElement("div",{className:"w-8 h-8 rounded-full flex items-center justify-center text-sm "+(m.from==="ai"?"bg-indigo-100 text-indigo-600":"bg-gray-200 text-gray-600")},m.from==="ai"?"\u{1f916}":"\u{1f464}"),React.createElement("div",{className:"flex-1"},React.createElement("pre",{className:"text-sm whitespace-pre-wrap font-sans"},m.text)))})),React.createElement("div",{className:"card flex gap-3 items-end"},React.createElement("div",{className:"flex-1"},React.createElement("input",{className:"input",placeholder:"Type command...",value:cmd,onChange:function(e){return scmd(e.target.value)},onKeyDown:function(e){if(e.key==="Enter"){e.preventDefault();submit()}}})),React.createElement("button",{className:"btn btn-primary",onClick:submit,disabled:!cmd.trim()},"Send")),cf?React.createElement("div",{className:"fixed inset-0 bg-black/50 z-50 flex items-center justify-center",onClick:function(){scf(null)}},React.createElement("div",{className:"bg-white rounded-xl max-w-md mx-4 p-6",onClick:function(e){return e.stopPropagation()}},React.createElement("h2",{className:"text-lg font-bold mb-4"},"Confirm"),React.createElement("p",{className:"text-sm mb-4"},cf.action==="create"?"Create task in club?":""),React.createElement("button",{className:"btn btn-primary w-full mb-2",onClick:execA,disabled:exec},exec?"Executing...":"Confirm"),React.createElement("button",{className:"btn w-full",onClick:function(){scf(null)}},"Cancel"))):null,React.createElement("div",{className:"card mt-6"},React.createElement("h3",{className:"font-semibold mb-3"},"Example Commands"),React.createElement("div",{className:"grid grid-cols-1 md:grid-cols-2 gap-2 text-sm"},["Create a task for Rahul to arrange the projector by tomorrow","What are my urgent tasks?","Who is overloaded?","List all pending tasks","What risks exist?"].map(function(s,i){return React.createElement("button",{key:i,className:"text-left p-2 bg-gray-50 rounded-lg hover:bg-gray-100",onClick:function(){scmd(s)}},s)}))))));}
+const cfg = {
+  apiKey: "AIzaSyAAORXxX6tBpfCAtkEvWD_ls_VDhZuMdro",
+  authDomain: "code-vidya-hack-day-ps-3-6b47d.firebaseapp.com",
+  projectId: "code-vidya-hack-day-ps-3-6b47d",
+};
+
+const app = getApps().length ? getApps()[0] : initializeApp(cfg);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+interface Message {
+  from: 'user' | 'ai';
+  text: string;
+  timestamp?: string;
+}
+
+interface PendingAction {
+  action: 'create' | 'complete';
+  data: any;
+}
+
+export default function AIAssistantPage() {
+  const [user, setUser] = useState<User | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [clubs, setClubs] = useState<any[]>([]);
+  const [currentClubId, setCurrentClubId] = useState<string | null>(null);
+  const [club, setClub] = useState<any>(null);
+  const [command, setCommand] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [pendingConfirmation, setPendingConfirmation] = useState<PendingAction | null>(null);
+  const [executing, setExecuting] = useState(false);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
+  const [risks, setRisks] = useState<any[]>([]);
+  const [roleName, setRoleName] = useState('');
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      if (!u) {
+        window.location.href = '/login';
+        return;
+      }
+      setUser(u);
+      setAuthChecked(true);
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (authChecked && user) {
+      loadClubs();
+    }
+  }, [authChecked, user]);
+
+  async function loadClubs() {
+    if (!user) return;
+    try {
+      const q = query(
+        collection(db, 'clubMembers'),
+        where('userId', '==', user.uid),
+        where('status', '==', 'ACTIVE')
+      );
+      const snapshot = await getDocs(q);
+      const rawClubs = await Promise.all(
+        snapshot.docs.map(async (d) => {
+          const m = d.data() as any;
+          const c = await getDoc(doc(db, 'clubs', m.clubId));
+          if (!c.exists()) return null;
+          return { id: c.id, ...c.data(), membershipRole: m.role };
+        })
+      );
+      const memberClubs: any[] = rawClubs.filter((x): x is any => Boolean(x));
+
+      setClubs(memberClubs);
+      if (memberClubs.length > 0 && memberClubs[0]) {
+        const firstClub = memberClubs[0];
+        setCurrentClubId(firstClub.id);
+        setClub(firstClub);
+        if (firstClub.membershipRole === 'OWNER') setRoleName('Owner');
+        loadClubData(firstClub.id);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function loadClubData(clubId: string) {
+    try {
+      const [tsSnap, evSnap, mbSnap, rkSnap] = await Promise.all([
+        getDocs(query(collection(db, 'tasks'), where('clubId', '==', clubId))),
+        getDocs(query(collection(db, 'events'), where('clubId', '==', clubId))),
+        getDocs(
+          query(
+            collection(db, 'clubMembers'),
+            where('clubId', '==', clubId),
+            where('status', '==', 'ACTIVE')
+          )
+        ),
+        getDocs(query(collection(db, 'risks'), where('clubId', '==', clubId))),
+      ]);
+
+      setTasks(tsSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setEvents(evSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setMembers(mbSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setRisks(rkSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function processNaturalLanguage(cmd: string) {
+    const c = cmd.toLowerCase().trim();
+    const now = new Date();
+
+    const urgent = tasks.filter(
+      (t) => (t.priority === 'HIGH' || t.priority === 'CRITICAL') && t.status !== 'COMPLETED'
+    );
+    const overdue = tasks.filter(
+      (t) => t.deadline && new Date(t.deadline) < now && t.status !== 'COMPLETED'
+    );
+    const openRisks = risks.filter((r) => r.status === 'OPEN' || !r.status);
+
+    // Intent: Urgent / Attention
+    if (
+      c.includes('urgent') ||
+      c.includes('attention') ||
+      c.includes('what needs') ||
+      c.includes('whats happening')
+    ) {
+      let resp = '📊 **Club Operations Status**:\n\n';
+      if (urgent.length > 0) {
+        resp += `🔴 **${urgent.length} Urgent Tasks**:\n` +
+          urgent.slice(0, 5).map((t) => `• ${t.title} (${t.priority}) — Assigned: ${t.assignedTo || 'Unassigned'}`).join('\n') + '\n\n';
+      }
+      if (overdue.length > 0) {
+        resp += `⚠️ **${overdue.length} Overdue Tasks**:\n` +
+          overdue.slice(0, 3).map((t) => `• ${t.title} (Due: ${t.deadline})`).join('\n') + '\n\n';
+      }
+      if (openRisks.length > 0) {
+        resp += `🚨 **${openRisks.length} Unresolved Risks** detected.\n`;
+      }
+      if (urgent.length === 0 && overdue.length === 0 && openRisks.length === 0) {
+        resp = '✅ All clear! No urgent bottlenecks or overdue tasks found.';
+      }
+      return { response: resp };
+    }
+
+    // Intent: Workload / Overloaded
+    if (c.includes('overloaded') || c.includes('workload') || c.includes('who is busy')) {
+      const counts = members.map((m) => {
+        const count = tasks.filter(
+          (t) =>
+            (t.assignedTo === m.userId ||
+              (t.assignedTo || '').toLowerCase() === (m.displayName || '').toLowerCase()) &&
+            t.status !== 'COMPLETED'
+        ).length;
+        return { name: m.displayName || m.email || 'Team Member', count };
+      }).sort((a, b) => b.count - a.count);
+
+      if (counts.length === 0) return { response: 'No workload data available.' };
+
+      let resp = '👥 **Team Workload Distribution**:\n\n';
+      counts.slice(0, 8).forEach((item) => {
+        resp += `• ${item.name}: **${item.count} active tasks** ${item.count >= 3 ? '🔴 (Heavy)' : '🟢'}\n`;
+      });
+      return { response: resp };
+    }
+
+    // Intent: Risks
+    if (c.includes('risk') || c.includes('show risk') || c.includes('what risks')) {
+      if (openRisks.length === 0) {
+        return { response: '✅ No active risks detected in the club operations.' };
+      }
+      let resp = `⚠️ **${openRisks.length} Active Operational Risks**:\n\n`;
+      openRisks.slice(0, 5).forEach((r) => {
+        resp += `• [${r.severity || 'HIGH'}] **${r.title}**: ${r.description || 'Action required'}\n`;
+      });
+      return { response: resp };
+    }
+
+    // Intent: List tasks
+    if (c.includes('list task') || c.includes('all tasks') || c.includes('show tasks')) {
+      const active = tasks.filter((t) => t.status !== 'COMPLETED');
+      if (active.length === 0) return { response: '✅ No pending tasks! Everything is completed.' };
+      let resp = `📋 **Pending Tasks (${active.length})**:\n\n`;
+      active.slice(0, 8).forEach((t) => {
+        resp += `• [${t.priority}] **${t.title}** — ${t.assignedToName || t.assignedTo || 'Unassigned'}\n`;
+      });
+      return { response: resp };
+    }
+
+    // Intent: Create task pattern
+    // e.g. "Create a high priority task for Rahul to arrange projector by tomorrow"
+    const taskMatch = c.match(
+      /create\s+(?:a\s+)?(?:(high|critical|medium|low)\s+priority\s+)?task\s+for\s+(.+?)\s+to\s+(.+?)(?:\s+by\s+(today|tomorrow|tonight|\S+))?$/i
+    );
+    if (taskMatch) {
+      const priority = (taskMatch[1] ? taskMatch[1].toUpperCase() : 'HIGH') as any;
+      const assignee = taskMatch[2].trim();
+      const title = taskMatch[3].trim();
+      const rawDeadline = taskMatch[4];
+
+      let deadline = new Date().toISOString().split('T')[0];
+      if (rawDeadline === 'tomorrow') {
+        deadline = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      } else if (rawDeadline && rawDeadline !== 'today' && rawDeadline !== 'tonight') {
+        deadline = rawDeadline;
+      }
+
+      return {
+        response: `I've prepared this task for you:\n\n• **Title**: ${title}\n• **Assignee**: ${assignee}\n• **Priority**: ${priority}\n• **Deadline**: ${deadline}\n\nPlease click **Confirm Action** to save it to your club database.`,
+        action: {
+          action: 'create' as const,
+          data: { title, assignedTo: assignee, assignedToName: assignee, priority, deadline },
+        },
+      };
+    }
+
+    // Intent: Mark done
+    const markMatch = c.match(/mark\s+(.+?)\s+(?:as\s+)?(?:completed|done)/i);
+    if (markMatch) {
+      const queryTitle = markMatch[1].trim().toLowerCase();
+      const match = tasks.find((t) => (t.title || '').toLowerCase().includes(queryTitle));
+      if (!match) {
+        return { response: `I couldn't find a task matching "${queryTitle}".` };
+      }
+      return {
+        response: `Found task: **${match.title}** (${match.status})\n\nMark this task as **COMPLETED**?`,
+        action: {
+          action: 'complete' as const,
+          data: { taskId: match.id, title: match.title },
+        },
+      };
+    }
+
+    return {
+      response:
+        "I can help manage your club! Try asking:\n\n• *Create a high priority task for Rahul to arrange the projector by tomorrow*\n• *What are my urgent tasks?*\n• *Who is overloaded?*\n• *Show active operational risks*\n• *List all pending tasks*\n• *Mark projector as done*",
+    };
+  }
+
+  function handleSend() {
+    if (!command.trim()) return;
+    const userMsg: Message = { from: 'user', text: command };
+    const result = processNaturalLanguage(command);
+    const aiMsg: Message = { from: 'ai', text: result.response };
+
+    setMessages((prev) => [...prev, userMsg, aiMsg]);
+    if (result.action) {
+      setPendingConfirmation(result.action);
+    }
+    setCommand('');
+  }
+
+  async function executePendingAction() {
+    if (!pendingConfirmation || !currentClubId || !user) return;
+    setExecuting(true);
+    try {
+      if (pendingConfirmation.action === 'create') {
+        await addDoc(collection(db, 'tasks'), {
+          ...pendingConfirmation.data,
+          clubId: currentClubId,
+          status: 'TODO',
+          createdBy: user.uid,
+          createdAt: new Date().toISOString(),
+        });
+        await addDoc(collection(db, 'activityLogs'), {
+          clubId: currentClubId,
+          userId: user.uid,
+          userName: user.email,
+          action: 'AI_CREATED_TASK',
+          description: `AI created task: "${pendingConfirmation.data.title}"`,
+          createdAt: new Date().toISOString(),
+        });
+        setMessages((prev) => [
+          ...prev,
+          { from: 'ai', text: `✅ Successfully created task: **${pendingConfirmation.data.title}**!` },
+        ]);
+      } else if (pendingConfirmation.action === 'complete') {
+        await updateDoc(doc(db, 'tasks', pendingConfirmation.data.taskId), {
+          status: 'COMPLETED',
+          updatedAt: new Date().toISOString(),
+        });
+        setMessages((prev) => [
+          ...prev,
+          { from: 'ai', text: `✅ Task marked as **COMPLETED**!` },
+        ]);
+      }
+      setPendingConfirmation(null);
+      loadClubData(currentClubId);
+    } catch (e: any) {
+      setMessages((prev) => [...prev, { from: 'ai', text: `❌ Error: ${e.message}` }]);
+    } finally {
+      setExecuting(false);
+    }
+  }
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    window.location.href = '/login';
+  };
+
+  const handleClubChange = (clubId: string) => {
+    setCurrentClubId(clubId);
+    setClub(clubs.find((x) => x.id === clubId));
+    loadClubData(clubId);
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="skeleton w-8 h-8 rounded-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar
+        clubs={clubs}
+        currentClubId={currentClubId || ''}
+        userDisplayName={user?.email?.split('@')[0]}
+        clubRole={roleName}
+        onClubChange={handleClubChange}
+        onLogout={handleLogout}
+        clubName={club?.name}
+      />
+      <main className="flex-1 bg-gray-50 overflow-y-auto p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <span>✨</span> AI Assistant
+            </h1>
+            <p className="text-sm text-gray-500">
+              Natural language intelligence and real-time operations commands
+            </p>
+          </div>
+
+          {/* Chat Stream */}
+          <div className="bg-white border border-gray-200 rounded-xl p-4 min-h-[420px] max-h-[500px] overflow-y-auto mb-4 space-y-3">
+            {messages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center py-16 text-gray-400">
+                <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-3xl mb-3">
+                  🤖
+                </div>
+                <h3 className="font-semibold text-gray-700 text-base">ClubOps AI Agent Ready</h3>
+                <p className="text-xs text-gray-500 max-w-sm mt-1">
+                  Ask questions about your club or dictate tasks using natural language.
+                </p>
+              </div>
+            ) : (
+              messages.map((m, idx) => (
+                <div
+                  key={idx}
+                  className={`flex gap-3 ${
+                    m.from === 'ai' ? 'bg-indigo-50/50 border border-indigo-100 p-4 rounded-xl' : 'p-3'
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${
+                      m.from === 'ai' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    {m.from === 'ai' ? '🤖' : '👤'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-gray-500 mb-1">
+                      {m.from === 'ai' ? 'ClubOps AI' : 'You'}
+                    </p>
+                    <div className="text-sm text-gray-800 whitespace-pre-wrap font-sans leading-relaxed">
+                      {m.text}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Pending Action Confirmation Modal */}
+          {pendingConfirmation && (
+            <div className="mb-4 p-4 bg-indigo-50 border-2 border-indigo-500 rounded-xl flex items-center justify-between animate-fadeIn">
+              <div>
+                <p className="font-semibold text-sm text-indigo-900">
+                  Ready to execute action: {pendingConfirmation.action.toUpperCase()}
+                </p>
+                <p className="text-xs text-indigo-700">
+                  {pendingConfirmation.data.title}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  className="btn btn-sm btn-primary"
+                  onClick={executePendingAction}
+                  disabled={executing}
+                >
+                  {executing ? 'Executing...' : 'Confirm Action'}
+                </button>
+                <button
+                  className="btn btn-sm bg-white border border-gray-200"
+                  onClick={() => setPendingConfirmation(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Command Input Box */}
+          <div className="card flex gap-3 items-center">
+            <input
+              className="input flex-1"
+              placeholder="e.g. Create a task for Aman to confirm the backup venue by tonight..."
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+            />
+            <button
+              className="btn btn-primary px-6"
+              onClick={handleSend}
+              disabled={!command.trim()}
+            >
+              Send
+            </button>
+          </div>
+
+          {/* Suggested Quick Commands */}
+          <div className="mt-6">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
+              Suggested Commands
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {[
+                'Create a high priority task for Rahul to arrange projector by tomorrow',
+                'What are urgent tasks?',
+                'Who is overloaded?',
+                'Show active operational risks',
+                'List all pending tasks',
+              ].map((suggestion, idx) => (
+                <button
+                  key={idx}
+                  className="text-left text-xs p-3 bg-white border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50/30 transition-colors text-gray-700"
+                  onClick={() => setCommand(suggestion)}
+                >
+                  💬 {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

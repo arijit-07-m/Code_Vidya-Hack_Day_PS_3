@@ -28,5 +28,5 @@ export function getEffectivePermissions(
   additionalPermissions: Permission[]
 ): Permission[] {
   const combined = [...rolePermissions, ...additionalPermissions];
-  return [...new Set(combined)];
+  return Array.from(new Set(combined));
 }

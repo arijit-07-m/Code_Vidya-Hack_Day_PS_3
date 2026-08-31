@@ -23,8 +23,9 @@ if (typeof window !== 'undefined') {
 
 export { db, auth };
 
+import { useState, useEffect } from 'react';
+
 export function useFirebaseAuth() {
-  const { useState, useEffect } = require('react');
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
