@@ -151,7 +151,7 @@ export default function MembersPage() {
       );
       const rawClubs = await Promise.all(
         userMembers.map(async (d) => {
-          const m = d.data() as any;
+          const m = d;
           const c = await getDoc(doc(db, 'clubs', m.clubId));
           if (!c.exists()) return null;
           return { id: c.id, ...c.data(), membershipRole: m.role };

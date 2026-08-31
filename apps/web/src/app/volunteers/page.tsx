@@ -92,7 +92,7 @@ export default function VolunteersPage() {
       );
       const rawClubs = await Promise.all(
         userMembers.map(async (d) => {
-          const m = d.data() as any;
+          const m = d;
           const c = await getDoc(doc(db, 'clubs', m.clubId));
           if (!c.exists()) return null;
           return { id: c.id, ...c.data(), membershipRole: m.role };
@@ -125,7 +125,7 @@ export default function VolunteersPage() {
       const allTasks = tasksSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
 
       const profiles: VolunteerProfile[] = membersSnap.docs.map((d, idx) => {
-        const m = d.data() as any;
+        const m = d;
         const name = m.displayName || m.email?.split('@')[0] || `Member ${idx + 1}`;
         const nameLower = name.toLowerCase();
         const emailLower = (m.email || '').toLowerCase();
