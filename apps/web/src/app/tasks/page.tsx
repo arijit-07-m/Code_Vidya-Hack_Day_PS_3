@@ -1,128 +1,23 @@
 'use client';
+import{useState,useEffect}from'react';
+import{initializeApp,getApps}from'firebase/app';
+import{getAuth,signOut,onAuthStateChanged}from'firebase/auth';
+import{getFirestore,collection,addDoc,query,where,getDocs,orderBy,doc,getDoc,updateDoc}from'firebase/firestore';
+import Sidebar from'@/components/Sidebar';
+const cfg={apiKey:"AIzaSyAAORXxX6tBpfCAtkEvWD_ls_VDhZuMdro",authDomain:"code-vidya-hack-day-ps-3-6b47d.firebaseapp.com",projectId:"code-vidya-hack-day-ps-3-6b47d"};
+const app=getApps().length?getApps()[0]:initializeApp(cfg);const auth=getAuth(app);const db=getFirestore(app);
 
-import { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import Sidebar from '@/components/Sidebar';
-import DashboardLayout from '@/components/DashboardLayout';
-import { api } from '@/lib/api';
-import { getPriorityColor, getStatusColor, formatDate } from '@/lib/utils';
-
-interface TaskData { id: string; title: string; status: string; priority: string; deadline?: string; assignedTo: string; assignedToName?: string; eventId?: string; }
-interface ClubInfo { id: string; name: string; membershipRole: string; }
-
-function TasksContent() {
-  const { logout } = useAuth();
-  const [clubs, setClubs] = useState<ClubInfo[]>([]);
-  const [currentClubId, setCurrentClubId] = useState<string | null>(null);
-  const [tasks, setTasks] = useState<TaskData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
-  const [filter, setFilter] = useState('all');
-  const [newTask, setNewTask] = useState({ title: '', description: '', assignedTo: '', priority: 'MEDIUM', deadline: '' });
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const d: any = await api.get('/clubs/my');
-        setClubs(d.clubs || []);
-        if (d.clubs?.length > 0) { const id = d.clubs[0].id; setCurrentClubId(id); loadTasks(id); }
-      } catch (e) { console.error(e); }
-    })();
-  }, []);
-
-  const loadTasks = async (clubId: string) => {
-    setLoading(true);
-    try { const d: any = await api.get(`/tasks/clubs/${clubId}`); setTasks(d.tasks || []); }
-    catch (e) { console.error(e); } finally { setLoading(false); }
-  };
-
-  const createTask = async () => {
-    try {
-      await api.post('/tasks', { ...newTask, clubId: currentClubId });
-      setShowCreate(false);
-      setNewTask({ title: '', description: '', assignedTo: '', priority: 'MEDIUM', deadline: '' });
-      if (currentClubId) loadTasks(currentClubId);
-    } catch (e) { console.error(e); }
-  };
-
-  const updateStatus = async (taskId: string, status: string) => {
-    try { await api.put(`/tasks/${taskId}`, { status, clubId: currentClubId }); if (currentClubId) loadTasks(currentClubId); }
-    catch (e) { console.error(e); }
-  };
-
-  const hLogout = async () => { await logout(); };
-  const hClubChange = (id: string) => { setCurrentClubId(id); loadTasks(id); };
-
-  const getFiltered = () => tasks.filter((t: TaskData) => {
-    if (filter === 'todo') return t.status === 'TODO';
-    if (filter === 'in_progress') return t.status === 'IN_PROGRESS';
-    if (filter === 'completed') return t.status === 'COMPLETED';
-    if (filter === 'critical') return t.priority === 'CRITICAL';
-    if (filter === 'overdue') return !!t.deadline && new Date(t.deadline) < new Date() && t.status !== 'COMPLETED';
-    return true;
-  });
-
-  const filtered = getFiltered();
-return (
-    <DashboardLayout sidebar={<Sidebar clubs={clubs} currentClubId={currentClubId || ''} onClubChange={hClubChange} onLogout={hLogout} clubName={clubs.find(c => c.id === currentClubId)?.name || 'Select'} />}>
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">✅ Tasks</h1>
-          <button className="btn btn-primary" onClick={() => setShowCreate(!showCreate)}>{showCreate ? 'Cancel' : '+ New Task'}</button>
-        </div>
-        {showCreate && (
-          <div className="card mb-6">
-            <h3 className="font-semibold mb-4">New Task</h3>
-            <div className="space-y-3">
-              <input className="input" placeholder="Task title" value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})} />
-              <input className="input" placeholder="Assignee UID" value={newTask.assignedTo} onChange={e => setNewTask({...newTask, assignedTo: e.target.value})} />
-              <input className="input" type="date" value={newTask.deadline} onChange={e => setNewTask({...newTask, deadline: e.target.value})} />
-              <select className="input" value={newTask.priority} onChange={e => setNewTask({...newTask, priority: e.target.value})}>
-                <option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option><option value="CRITICAL">Critical</option>
-              </select>
-              <button className="btn btn-primary" onClick={createTask}>Create Task</button>
-            </div>
-          </div>
-        )}
-        <div className="flex gap-2 mb-4 flex-wrap">
-          {['all','todo','in_progress','completed','critical','overdue'].map(f => (
-            <button key={f} className={`btn btn-sm ${filter === f ? 'btn-primary' : ''}`} onClick={() => setFilter(f)}>
-              {f === 'in_progress' ? 'In Progress' : f.charAt(0).toUpperCase() + f.slice(1)}
-            </button>
-          ))}
-        </div>
-        {loading ? (
-          <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="card"><div className="skeleton h-6 w-48" /></div>)}</div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-gray-500"><p>No tasks found</p></div>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map((task: TaskData) => (
-              <div key={task.id} className="card flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`badge ${getStatusColor(task.status)}`}>{task.status}</span>
-                    <span className={`badge ${getPriorityColor(task.priority)}`}>{task.priority}</span>
-                    <span className="text-sm font-medium">{task.title}</span>
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {task.assignedToName || task.assignedTo} {task.deadline ? `· Due ${formatDate(task.deadline)}` : ''}
-                    {task.deadline && new Date(task.deadline) < new Date() && task.status !== 'COMPLETED' ? ' ⚠️ Overdue' : ''}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {task.status !== 'COMPLETED' ? <button className="btn btn-sm btn-primary" onClick={() => updateStatus(task.id, 'COMPLETED')}>Done</button> : null}
-                  {task.status === 'TODO' ? <button className="btn btn-sm" onClick={() => updateStatus(task.id, 'IN_PROGRESS')}>Start</button> : null}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </DashboardLayout>
-  );
-}
-
-export default function TasksPage() {
-  return <AuthProvider><TasksContent /></AuthProvider>;
-}
+export default function TasksPage(){
+const[user,su]=useState(null);const[ck,sc]=useState(false);const[clubs,scl]=useState([]);
+const[cid,scid]=useState(null);const[tasks,st]=useState([]);const[ld,sld]=useState(true);const[sh,ssh]=useState(false);const[filter,sf]=useState('all');
+const[f,sff]=useState({title:'',assignedTo:'',priority:'MEDIUM',deadline:''});
+useEffect(()=>{const un=onAuthStateChanged(auth,u=>{if(!u){window.location.href='/login';return;}su(u);sc(true);});return()=>un();},[]);
+useEffect(()=>{if(ck)L();},[ck]);
+async function L(){const q=query(collection(db,'clubMembers'),where('userId','==',user.uid),where('status','==','ACTIVE'));const sn=await getDocs(q);const mc=(await Promise.all(sn.docs.map(async d=>{const m=d.data()as any;const c=await getDoc(doc(db,'clubs',m.clubId));if(!c.exists())return null;return{id:c.id,...c.data(),membershipRole:m.role};}))).filter(Boolean);scl(mc);if(mc.length>0){scid(mc[0].id);LT(mc[0].id);}}
+async function LT(id){sld(true);try{const sn=await getDocs(query(collection(db,'tasks'),where('clubId','==',id),orderBy('createdAt','desc')));st(sn.docs.map(d=>({id:d.id,...d.data()})));}catch(e){}finally{sld(false);}}
+async function cr(){await addDoc(collection(db,'tasks'),{...f,clubId:cid,status:'TODO',createdBy:user.uid,createdAt:new Date().toISOString()});ssh(false);sff({title:'',assignedTo:'',priority:'MEDIUM',deadline:''});if(cid)LT(cid);}
+async function up(id,stt){await updateDoc(doc(db,'tasks',id),{status:stt});if(cid)LT(cid);}
+const hl=async()=>{await signOut(auth);window.location.href='/login';};const hc=id=>{scid(id);LT(id);};
+const filtered=tasks.filter(t=>{if(filter==='todo')return t.status==='TODO';if(filter==='completed')return t.status==='COMPLETED';if(filter==='in_progress')return t.status==='IN_PROGRESS';if(filter==='critical')return t.priority==='CRITICAL';if(filter==='overdue')return t.deadline&&new Date(t.deadline)<new Date()&&t.status!=='COMPLETED';return true;});
+if(!user)return<div className="min-h-screen flex items-center justify-center"><div className="skeleton w-8 h-8 rounded-full"/></div>;
+return(<div className="flex min-h-screen"><Sidebar clubs={clubs} currentClubId={cid||''} userDisplayName={user?.email?.split('@')[0]} onClubChange={hc} onLogout={hl} clubName={clubs.find(c=>c.id===cid)?.name}/><main className="flex-1 bg-gray-50 overflow-y-auto p-6"><div className="max-w-6xl mx-auto"><div className="flex items-center justify-between mb-6"><h1 className="text-2xl font-bold">✅ Tasks</h1><button className="btn btn-primary" onClick={()=>ssh(!sh)}>{sh?'Cancel':'+ New Task'}</button></div>{sh&&<div className="card mb-6"><h3 className="font-semibold mb-4">New Task</h3><div className="space-y-3"><input className="input" placeholder="Title" value={f.title} onChange={e=>sff({...f,title:e.target.value})}/><input className="input" placeholder="Assignee" value={f.assignedTo} onChange={e=>sff({...f,assignedTo:e.target.value})}/><input className="input" type="date" value={f.deadline} onChange={e=>sff({...f,deadline:e.target.value})}/><select className="select" value={f.priority} onChange={e=>sff({...f,priority:e.target.value})}><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option><option value="CRITICAL">Critical</option></select><button className="btn btn-primary" onClick={cr}>Create</button></div></div>}<div className="flex gap-2 mb-4 flex-wrap">{['all','todo','in_progress','completed','critical','overdue'].map(k=><button key={k} className={'btn btn-sm'+(filter===k?' btn-primary':'')} onClick={()=>sf(k)}>{k.replace('_',' ').replace(/^./,c=>c.toUpperCase())}</button>)}</div>{ld?<div className="space-y-3">{[1,2,3].map(i=><div key={i} className="card"><div className="skeleton h-6 w-48"/></div>)}</div>:filtered.length===0?<div className="empty-state"><div className="empty-state-icon">✅</div><p className="empty-state-title">No tasks found</p></div>:<div className="space-y-2">{filtered.map(t=><div key={t.id} className="card flex items-center justify-between"><div className="flex-1"><div className="flex items-center gap-2 mb-1"><span className={"badge "+(t.status==='COMPLETED'?'badge-green':t.status==='IN_PROGRESS'?'badge-blue':'badge-gray')}>{t.status}</span><span className={"badge "+(t.priority==='CRITICAL'?'badge-red':t.priority==='HIGH'?'badge-yellow':t.priority==='MEDIUM'?'badge-blue':'badge-gray')}>{t.priority}</span><span className="font-medium text-sm">{t.title}</span></div><div className="text-xs text-gray-400">{t.assignedToName||t.assignedTo||'Unassigned'}{t.deadline?' · Due '+new Date(t.deadline).toLocaleDateString():''}</div></div><div className="flex gap-2">{t.status!=='COMPLETED'&&<button className="btn btn-sm btn-primary" onClick={()=>up(t.id,'COMPLETED')}>Done</button>}{t.status==='TODO'&&<button className="btn btn-sm" onClick={()=>up(t.id,'IN_PROGRESS')}>Start</button>}</div></div>)}</div>}</div></main></div>);}
