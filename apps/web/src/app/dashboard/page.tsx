@@ -443,6 +443,60 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              {/* Upcoming Events */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                <div className="card lg:col-span-2">
+                  <h2 className="card-title mb-3">Upcoming Events</h2>
+                  {events.length === 0 ? (
+                    <p className="text-xs text-gray-400 py-6 text-center">No upcoming events. Create your first event to get started.</p>
+                  ) : events.slice(0, 3).map((e) => {
+                    const evtTasks = tasks.filter((t) => t.eventId === e.id);
+                    const evtDone = evtTasks.filter((t) => t.status === 'COMPLETED').length;
+                    const evtPct = evtTasks.length > 0 ? Math.round((evtDone / evtTasks.length) * 100) : 0;
+                    return (
+                      <div key={e.id} className="border border-gray-100 rounded-lg p-3 mb-2 hover:shadow-sm transition-shadow">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-semibold text-sm text-gray-900">{e.eventName}</p>
+                          <span className={"badge " + stClass(e.status)}>{e.status}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-2">{e.date ? fmtDateLong(e.date) : 'Date TBD'} {(e.venue ? '· ' + e.venue : '')}</p>
+                        {evtTasks.length > 0 && (
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-indigo-500" style={{ width: evtPct + '%' }} />
+                            </div>
+                            <span className="text-xs text-gray-500">{evtDone}/{evtTasks.length}</span>
+                          </div>
+                        )}
+                        <div className="flex gap-2 mt-2 text-xs text-gray-400">
+                          <span>{evtTasks.length} tasks</span>
+                          <span>{risks.filter(r => r.eventId === e.id).length} risks</span>
+                        </div>
+                        <a href={'/events?clubId=' + currentClubId + '&eventId=' + e.id} className="btn btn-sm mt-2">Open Event</a>
+                      </div>
+                    );
+                  })}
+                  {events.length > 3 && <p className="text-xs text-gray-400 mt-2">+{events.length - 3} more events</p>}
+                  <a href={'/events?clubId=' + currentClubId} className="btn btn-sm mt-3 w-full bg-white border border-gray-200">View All Events</a>
+                </div>
+                <div className="card">
+                  <h2 className="card-title mb-3">Risk Overview</h2>
+                  {risks.length === 0 ? (
+                    <p className="text-xs text-gray-400 py-6 text-center">✓ No active operational risks</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {criticalRisks > 0 && <div className="flex items-center gap-2 p-2 bg-red-50 rounded-lg"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /><span className="text-sm font-medium">{criticalRisks} Critical</span></div>}
+                      {highRisks > 0 && <div className="flex items-center gap-2 p-2 bg-orange-50 rounded-lg"><span className="w-2.5 h-2.5 rounded-full bg-orange-500" /><span className="text-sm font-medium">{highRisks} High</span></div>}
+                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"><span className="w-2.5 h-2.5 rounded-full bg-gray-400" /><span className="text-sm font-medium">{risks.filter(r => r.severity === 'MEDIUM' || r.severity === 'LOW').length} Other</span></div>
+                      {risks.slice(0, 2).map((r) => (
+                        <div key={r.id} className="text-xs text-gray-600 p-2 bg-gray-50 rounded-lg border border-gray-100">⚠️ {r.title}</div>
+                      ))}
+                    </div>
+                  )}
+                  <a href={'/risks?' + (currentClubId ? 'clubId=' + currentClubId : '')} className="btn btn-sm mt-3 w-full bg-white border border-gray-200">View Risk Center</a>
+                </div>
+              </div>
+
               {/* Today's Tasks & Activity */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                 <div className="card">
