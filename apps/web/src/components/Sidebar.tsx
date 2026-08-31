@@ -50,7 +50,14 @@ export default function Sidebar({
     .toUpperCase()
     .slice(0, 2);
 
-  const canSee = (perm?: Permission) => !perm || userPermissions.includes(perm);
+  const canSee = (perm?: Permission) => {
+    // If no permissions loaded yet, show everything
+    if (userPermissions.length === 0) return true;
+    // If no permission required, show
+    if (!perm) return true;
+    // Check permission
+    return userPermissions.includes(perm);
+  };
 
   const sections = [
     { key: 'main', label: 'MAIN', items: NAV_ITEMS.filter((i) => i.section === 'main' && canSee(i.permission)) },
