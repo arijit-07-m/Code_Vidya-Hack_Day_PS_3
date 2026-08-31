@@ -12,44 +12,13 @@ College clubs operate through scattered WhatsApp messages, spreadsheets, documen
 
 ## Proposed Solution
 
-ClubOps AI provides a centralized AI-powered platform that:
-
-- Centralizes clubs, members, events, tasks, volunteers, meetings, and documents
-- Uses AI to understand meeting notes and extract actionable tasks
-- Detects operational risks before they become problems
-- Provides an AI action agent that can safely perform application operations
-- Offers a RAG knowledge base for club-specific information
-- Synchronizes across web dashboard and Android mobile app in real-time
-
-## Key Features
-
-- **Multi-Club Architecture**: Support for multiple independent clubs with complete data isolation
-- **Role-Based Access Control**: Owner, Admin, Event Head, Member, Volunteer roles
-- **Event Management**: Full event lifecycle management
-- **Task Management**: Create, assign, track, and manage tasks with priorities and dependencies
-- **Volunteer Management**: Track skills, workload, and availability
-- **Meeting Management**: Create meetings, add notes, upload transcripts
-- **Document Management**: Upload and manage club documents
-- **Risk Management**: AI-powered risk detection and recommendations
-- **Announcements**: Create and manage club announcements
-- **Activity Logging**: Complete audit trail of all operations
-
-## AI Features
-
-- **Meeting Analysis**: AI extracts action items, owners, deadlines, and priorities from meeting notes/transcripts
-- **Human Review Workflow**: AI suggestions are reviewed, edited, and approved by humans before execution
-- **Risk Detection**: AI analyzes events, tasks, deadlines, and workloads to identify operational risks
-- **AI Action Agent**: Natural language commands that safely execute application operations
-- **RAG Knowledge Base**: Upload documents, AI retrieves relevant information to answer questions
-- **Volunteer Matching**: AI matches volunteers to tasks based on skills and workload
-- **Announcement Generator**: Generate announcements with AI assistance
-- **Daily Operations Brief**: AI-powered dashboard summary of urgent items
+ClubOps AI provides a centralized AI-powered platform that centralizes clubs, members, events, tasks, volunteers, meetings, and documents; uses AI to understand meeting notes and extract actionable tasks; detects operational risks; provides an AI action agent; offers a RAG knowledge base; and synchronizes across web and Android in real-time.
 
 ## Technology Stack
 
 | Component | Technology |
 |-----------|-----------|
-| Web Frontend | Next.js, React, TypeScript, Tailwind CSS, shadcn/ui |
+| Web Frontend | Next.js, React, TypeScript, Tailwind CSS |
 | Mobile App | React Native, Expo, TypeScript |
 | Backend | Node.js, Express, TypeScript |
 | Database | Cloud Firestore (Firebase) |
@@ -57,114 +26,48 @@ ClubOps AI provides a centralized AI-powered platform that:
 | Storage | Firebase Storage |
 | AI Provider | Gemini / OpenAI (abstracted) |
 | RAG | Vector embeddings on document chunks |
-| Realtime | Firestore realtime listeners |
 | Validation | Zod |
-| Icons | Lucide |
-| Charts | Recharts |
-
-## Architecture
-
-```
-Web (Next.js) ──┐
-                 ├── Backend (Express) ──┐
-Mobile (Expo) ──┘                       │
-                                          ├── Firebase Auth
-                                          ├── Cloud Firestore
-                                          ├── Firebase Storage
-                                          ├── AI Provider (Gemini/OpenAI)
-                                          └── RAG (Vector DB)
-```
-
-## Multi-Tenant Security
-
-All data is scoped by `clubId`. Firestore security rules and backend middleware enforce that users can only access data belonging to clubs they are members of. Cross-club data access is strictly prohibited.
 
 ## Installation
 
-### Prerequisites
-
-- Node.js 18+
-- npm 9+
-- Firebase project
-- Gemini or OpenAI API key
-
-### Setup
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/clubops-ai.git
-   cd clubops-ai
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Copy environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-
-4. Configure your Firebase project and AI provider in `.env`
-
-### Running Web Application
-
 ```bash
-npm run dev:web
+git clone https://github.com/arijit-07-m/Code_Vidya-Hack_Day_PS_3.git
+cd Code_Vidya-Hack_Day_PS_3
+cd apps/web && npm install
+cd ../../backend && npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Copy `.env.example` to `.env` and configure Firebase + AI keys.
 
-### Running Backend
-
+### Run Web
 ```bash
-npm run dev:backend
+cd apps/web && npm run dev
 ```
 
-Backend runs on [http://localhost:3001](http://localhost:3001)
-
-### Running Android Application
-
+### Run Backend
 ```bash
-npm run dev:mobile
+cd backend && npm run dev
 ```
 
-Scan the QR code with Expo Go app.
+### Run Mobile
+```bash
+cd apps/mobile && npm run start
+```
 
-## Environment Variables
+## Features
 
-See `.env.example` for all required environment variables.
+- Multi-club architecture with data isolation
+- Role-based access (Owner, Admin, Event Head, Member, Volunteer)
+- Club, Event, Task, Meeting, Volunteer management
+- AI meeting analysis with human review
+- AI risk detection with explanations
+- AI action agent (natural language → safe actions)
+- RAG knowledge base
+- Realtime sync across web + Android
 
-## Demo Credentials
+## Demo
 
-*Demo accounts will be created during deployment.*
-
-## Screenshots
-
-*Screenshots to be added after UI development.*
-
-## Demo Scenario
-
-1. Login as club owner
-2. Open Code Vidhya Club
-3. Open Hack Day event
-4. Show dashboard with metrics
-5. Upload/paste meeting transcript
-6. Click "Analyze Meeting"
-7. AI extracts action items
-8. Human approves tasks
-9. Tasks appear in task dashboard
-10. Risk detector identifies issues
-11. Open AI Assistant for natural language commands
-12. AI creates tasks, assigns volunteers
-13. Android app shows new tasks in real-time
-14. Mark task complete on Android
-15. Web dashboard updates automatically
-
-## Team Members
-
-- *Add team members here*
+See `docs/demo.md` for a complete walkthrough.
 
 ---
 
