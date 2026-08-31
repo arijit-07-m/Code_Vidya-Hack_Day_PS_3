@@ -104,7 +104,7 @@ export default function Sidebar({
 
           {/* Notifications Dropdown */}
           {showNotifications && (
-            <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-3 animate-fadeIn">
+            <div className="absolute left-0 top-full mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-3 animate-fadeIn">
               <div className="flex items-center justify-between pb-2 border-b border-gray-100 mb-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-700">
                   Notifications ({unreadCount})

@@ -67,12 +67,13 @@ export default function AnalyticsPage() {
     try {
       const q = query(
         collection(db, 'clubMembers'),
-        where('userId', '==', user.uid),
         where('status', '==', 'ACTIVE')
       );
       const snapshot = await getDocs(q);
+      const allMembers = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const userMembers = allMembers.filter((x) => x.userId === user.uid || (x.email && x.email.toLowerCase() === (user.email || '').toLowerCase()));
       const rawClubs = await Promise.all(
-        snapshot.docs.map(async (d) => {
+        userMembers.map(async (d) => {
           const m = d.data() as any;
           const c = await getDoc(doc(db, 'clubs', m.clubId));
           if (!c.exists()) return null;
