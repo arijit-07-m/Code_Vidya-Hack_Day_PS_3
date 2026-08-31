@@ -59,12 +59,12 @@ export default function Sidebar({
   };
 
   const sections = [
-    { key: 'main', label: 'MAIN', items: NAV_ITEMS.filter((i) => i.section === 'main' && canSee(i.permission)) },
-    { key: 'knowledge', label: 'KNOWLEDGE', items: NAV_ITEMS.filter((i) => i.section === 'knowledge' && canSee(i.permission)) },
-    { key: 'operations', label: 'OPERATIONS', items: NAV_ITEMS.filter((i) => i.section === 'operations' && canSee(i.permission)) },
-    { key: 'ai', label: 'AI', items: NAV_ITEMS.filter((i) => i.section === 'ai' && canSee(i.permission)) },
-    { key: 'analytics', label: 'ANALYTICS', items: NAV_ITEMS.filter((i) => i.section === 'analytics' && canSee(i.permission)) },
-    { key: 'settings', label: 'SETTINGS', items: NAV_ITEMS.filter((i) => i.section === 'settings' && canSee(i.permission)) },
+    { key: 'main', label: 'MAIN', items: NAV_ITEMS.filter((i) => i.section === 'main' && canSee(i.permission) && (i.href === '/dashboard' || currentClubId)) },
+    { key: 'knowledge', label: 'KNOWLEDGE', items: NAV_ITEMS.filter((i) => i.section === 'knowledge' && canSee(i.permission) && currentClubId) },
+    { key: 'operations', label: 'OPERATIONS', items: NAV_ITEMS.filter((i) => i.section === 'operations' && canSee(i.permission) && currentClubId) },
+    { key: 'ai', label: 'AI', items: NAV_ITEMS.filter((i) => i.section === 'ai' && canSee(i.permission) && currentClubId) },
+    { key: 'analytics', label: 'ANALYTICS', items: NAV_ITEMS.filter((i) => i.section === 'analytics' && canSee(i.permission) && currentClubId) },
+    { key: 'settings', label: 'SETTINGS', items: NAV_ITEMS.filter((i) => i.section === 'settings' && canSee(i.permission) && (i.href === '/seed' || currentClubId)) },
   ];
 
   const markAllRead = () => {
