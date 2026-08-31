@@ -36,4 +36,5 @@ export const NAV_ITEMS: NavItemDef[] = [
   { href: '/ai-assistant', label: 'AI Assistant', icon: '✨', permission: 'USE_AI', section: 'ai' },
   { href: '/analytics', label: 'Analytics', icon: '📊', permission: 'VIEW_ANALYTICS', section: 'analytics' },
   { href: '/settings', label: 'Settings', icon: '⚙️', permission: 'MANAGE_CLUB_SETTINGS', section: 'settings' },
+  { href: '/seed', label: 'Demo Data', icon: '🌱', section: 'settings' },
 ];
