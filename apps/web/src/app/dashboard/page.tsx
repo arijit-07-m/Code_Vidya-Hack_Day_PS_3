@@ -115,7 +115,7 @@ export default function DashboardPage() {
     try {
       const q = query(
         collection(db, 'clubMembers'),
-        where('status', '==', 'ACTIVE')
+        where('userId', '==', user.uid), where('userId', '==', user.uid), where('status', '==', 'ACTIVE')
       );
       const snapshot = await getDocs(q);
       const allMembers = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
@@ -162,7 +162,7 @@ export default function DashboardPage() {
           query(
             collection(db, 'clubMembers'),
             where('clubId', '==', id),
-            where('status', '==', 'ACTIVE')
+            where('userId', '==', user.uid), where('userId', '==', user.uid), where('status', '==', 'ACTIVE')
           )
         ),
         getDocs(

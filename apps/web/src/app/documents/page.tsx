@@ -67,7 +67,7 @@ export default function DocumentsPage() {
     try {
       const q = query(
         collection(db, 'clubMembers'),
-        where('status', '==', 'ACTIVE')
+        where('userId', '==', user.uid), where('status', '==', 'ACTIVE')
       );
       const snapshot = await getDocs(q);
       const allMembers = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));

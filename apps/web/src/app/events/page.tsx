@@ -111,7 +111,7 @@ export default function EventsPage() {
     try {
       const q = query(
         collection(db, 'clubMembers'),
-        where('status', '==', 'ACTIVE')
+        where('userId', '==', user.uid), where('status', '==', 'ACTIVE')
       );
       const snapshot = await getDocs(q);
       const allMembers = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
@@ -145,7 +145,7 @@ export default function EventsPage() {
 
   async function loadClubMembers(clubId: string) {
     try {
-      const q = query(collection(db, 'clubMembers'), where('clubId', '==', clubId), where('status', '==', 'ACTIVE'));
+      const q = query(collection(db, 'clubMembers'), where('clubId', '==', clubId), where('userId', '==', user.uid), where('status', '==', 'ACTIVE'));
       const sn = await getDocs(q);
       setClubMembers(sn.docs.map((d) => ({ id: d.id, ...d.data() })));
     } catch (e) {
