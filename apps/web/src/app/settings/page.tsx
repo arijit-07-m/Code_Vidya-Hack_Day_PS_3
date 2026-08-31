@@ -54,7 +54,7 @@ export default function SettingsPage() {
   const [clubs, setClubs] = useState<any[]>([]);
   const [currentClubId, setCurrentClubId] = useState<string | null>(null);
   const [club, setClub] = useState<any>(null);
-  const [tab, setTab] = useState<'members' | 'roles' | 'ownership'>('members');
+  const [tab, setTab] = useState<'members' | 'roles' | 'ownership' | 'club'>('members');
   const [members, setMembers] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [roleName, setRoleName] = useState('');
@@ -70,6 +70,12 @@ export default function SettingsPage() {
   const [confirmText, setConfirmText] = useState('');
   const [ownerMsg, setOwnerMsg] = useState('');
   const [transferring, setTransferring] = useState(false);
+
+  // Club deletion
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleteMsg, setDeleteMsg] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -182,6 +188,32 @@ export default function SettingsPage() {
       setInviting(false);
     }
   };
+
+
+  async function deleteClub() {
+    if (!currentClubId || !club) return;
+    setDeleting(true); setDeleteMsg('');
+    try {
+      const collections = ['clubMembers', 'events', 'tasks', 'meetings', 'risks', 'announcements', 'roles', 'invitations', 'activityLogs'];
+      for (const col of collections) {
+        const snap = await getDocs(query(collection(db, col), where('clubId', '==', currentClubId)));
+        const docs = snap.docs;
+        for (let i = 0; i < docs.length; i += 500) {
+          const batch = docs.slice(i, i + 500);
+          await Promise.all(batch.map(d => deleteDoc(doc(db, col, d.id))));
+        }
+      }
+      await deleteDoc(doc(db, 'clubs', currentClubId));
+      setDeleteMsg('Club deleted successfully.');
+      setShowDeleteModal(false);
+      setTimeout(() => {
+        const remaining = clubs.filter(c => c.id !== currentClubId);
+        if (remaining.length > 0) { window.location.href = '/dashboard?clubId=' + remaining[0].id; }
+        else { window.location.href = '/clubs/new'; }
+      }, 1500);
+    } catch (e) { setDeleteMsg('Error: ' + e.message); }
+    setDeleting(false);
+  }
 
   const removeMember = async (mid: string) => {
     if (!confirm('Remove this member?')) return;
@@ -349,6 +381,14 @@ export default function SettingsPage() {
                 onClick={() => setTab('ownership')}
               >
                 Transfer Ownership
+              </button>
+            )}
+            {roleName === 'Owner' && (
+              <button
+                className={'tab' + (tab === 'club' ? ' active' : '')}
+                onClick={() => setTab('club')}
+              >
+                Club
               </button>
             )}
           </div>
@@ -625,10 +665,54 @@ export default function SettingsPage() {
                 >
                   {transferring ? 'Transferring...' : 'Transfer Ownership'}
                 </button>
-                {ownerMsg && <p className="text-xs font-semibold mt-2">{ownerMsg}</p>}
+                {{ownerMsg && <p className="text-xs font-semibold mt-2">{ownerMsg}</p>}
               </div>
             </div>
           )}
+
+          {tab === 'club' && (
+            <div className="space-y-6">
+              <div className="card">
+                <h2 className="font-bold text-lg mb-4">General</h2>
+                <div className="space-y-3">
+                  <div><label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Club Name</label><input className="input" value={club?.name || ''} disabled /></div>
+                  <div><label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Description</label><textarea className="textarea" value={club?.description || ''} disabled /></div>
+                  <p className="text-xs text-gray-400">Contact the club owner to edit these details.</p>
+                </div>
+              </div>
+              <div className="card border-2 border-red-200">
+                <div className="flex items-center gap-2 mb-2"><span className="text-red-600 font-bold">DANGER ZONE</span></div>
+                <p className="text-sm text-gray-600 mb-4">Permanently delete this club and all associated data.</p>
+                <button className="btn btn-danger" onClick={() => setShowDeleteModal(true)}>Delete Club</button>
+              </div>
+              {showDeleteModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowDeleteModal(false)}>
+                  <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6" onClick={e => e.stopPropagation()}>
+                    <div className="text-center mb-4"><div className="text-4xl mb-2">Delete Club</div></div>
+                    <p className="text-sm text-gray-600 mb-4">Are you sure you want to delete <strong>{club?.name}</strong>?</p>
+                    <div className="grid grid-cols-2 gap-1 text-xs text-gray-500 mb-4 bg-gray-50 p-3 rounded-lg">
+                      <span>Events</span><span>Tasks</span><span>Members</span><span>Meetings</span>
+                      <span>Documents</span><span>Risks</span><span>Announcements</span><span>Activity history</span>
+                      <span>Custom roles</span><span>Invitations</span>
+                    </div>
+                    <p className="text-xs text-red-600 font-semibold mb-3">This action cannot be undone.</p>
+                    <div className="mb-3">
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Type <strong>{club?.name}</strong> to confirm:</label>
+                      <input className="input" placeholder="Enter club name" value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)} />
+                    </div>
+                    {deleteMsg && <p className="text-sm font-semibold mb-2">{deleteMsg}</p>}
+                    <div className="flex gap-2">
+                      <button className="btn flex-1 bg-gray-100" onClick={() => { setShowDeleteModal(false); setDeleteConfirm(''); }} disabled={deleting}>Cancel</button>
+                      <button className="btn btn-danger flex-1" onClick={deleteClub} disabled={deleting || deleteConfirm !== (club?.name || '')}>
+                        {deleting ? 'Deleting...' : 'Delete Club Permanently'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       </main>
     </div>
