@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "ClubOps AI",
+    "slug": "clubops-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#3b82f6"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.clubops.ai" },
+    "android": {
+      "adaptiveIcon": { "backgroundColor": "#3b82f6" },
+      "package": "com.clubops.ai"
+    },
+    "plugins": ["expo-secure-store"]
+  }
+}

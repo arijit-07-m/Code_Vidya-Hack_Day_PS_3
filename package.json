@@ -1,0 +1,28 @@
+{
+  "name": "clubops-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ClubOps AI - AI-powered operating system for college clubs",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "backend"
+  ],
+  "scripts": {
+    "dev:web": "cd apps/web && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:mobile": "cd apps/mobile && npm run start",
+    "build:web": "cd apps/web && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "build:all": "npm run build:web && npm run build:backend",
+    "lint": "cd apps/web && npm run lint",
+    "test": "cd backend && npm run test"
+  },
+  "keywords": [
+    "clubops",
+    "ai",
+    "club-management",
+    "hackathon"
+  ],
+  "license": "MIT"
+}
