@@ -101,7 +101,11 @@ export default function EventsPage() {
       }
       setUser(u);
       setAuthChecked(true);
-// Use URL clubId if provided
+    });
+    return () => unsub();
+  }, []);
+
+  // Use URL clubId if provided
   useEffect(() => {
     if (urlClubId && clubs.length > 0) {
       const found = clubs.find((c: any) => c.id === urlClubId);
@@ -113,10 +117,6 @@ export default function EventsPage() {
     }
   }, [urlClubId, clubs]);
 
-  // Load clubs on auth
-    });
-    return () => unsub();
-  }, []);
 
   useEffect(() => {
     if (authChecked && user) {
