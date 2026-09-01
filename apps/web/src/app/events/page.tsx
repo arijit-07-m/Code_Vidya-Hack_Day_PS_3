@@ -17,6 +17,7 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import Sidebar from '@/components/Sidebar';
+import { useSearchParams } from 'next/navigation';
 
 const cfg = {
   apiKey: "AIzaSyAAORXxX6tBpfCAtkEvWD_ls_VDhZuMdro",
@@ -57,6 +58,9 @@ export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
+  const searchParams = useSearchParams();
+  const urlClubId = searchParams.get('clubId');
+
   // Modal / Form state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<ClubEvent | null>(null);
@@ -77,6 +81,7 @@ export default function EventsPage() {
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
     startTime: '09:00',
+
     endTime: '18:00',
     venue: '',
     eventOwner: '',
@@ -96,6 +101,19 @@ export default function EventsPage() {
       }
       setUser(u);
       setAuthChecked(true);
+// Use URL clubId if provided
+  useEffect(() => {
+    if (urlClubId && clubs.length > 0) {
+      const found = clubs.find((c: any) => c.id === urlClubId);
+      if (found) {
+        setCurrentClubId(urlClubId);
+        loadEvents(urlClubId);
+        loadClubMembers(urlClubId);
+      }
+    }
+  }, [urlClubId, clubs]);
+
+  // Load clubs on auth
     });
     return () => unsub();
   }, []);
@@ -105,6 +123,17 @@ export default function EventsPage() {
       loadClubs();
     }
   }, [authChecked, user]);
+  // Use URL clubId if provided
+  useEffect(() => {
+    if (urlClubId && clubs.length > 0) {
+      const found = clubs.find(c => c.id === urlClubId);
+      if (found) {
+        setCurrentClubId(urlClubId);
+        loadEvents(urlClubId);
+        loadClubMembers(urlClubId);
+      }
+    }
+  }, [urlClubId, clubs]);
 
   async function loadClubs() {
     if (!user) return;
