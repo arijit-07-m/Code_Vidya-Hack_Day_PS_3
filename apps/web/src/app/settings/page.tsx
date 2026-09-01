@@ -665,7 +665,7 @@ export default function SettingsPage() {
                 >
                   {transferring ? 'Transferring...' : 'Transfer Ownership'}
                 </button>
-                {{ownerMsg && <p className="text-xs font-semibold mt-2">{ownerMsg}</p>}
+                {ownerMsg && <p className="text-xs font-semibold mt-2">{ownerMsg}</p>}
               </div>
             </div>
           )}
